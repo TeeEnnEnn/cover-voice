@@ -1,5 +1,5 @@
-import { relations } from 'drizzle-orm';
-import { pgTable, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import { pgTable, text, timestamp, boolean, index, jsonb, unique } from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
 	id: text('id').primaryKey(),
@@ -73,9 +73,101 @@ export const verification = pgTable(
 	(table) => [index('verification_identifier_idx').on(table.identifier)]
 );
 
+// A single variable that can be referenced in a block with the following syntax ${}
+export const variable = pgTable(
+	'variable',
+	{
+		id: text('id')
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		name: text('name').notNull(),
+		value: text('value').notNull(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: timestamp('created_at').defaultNow().notNull(),
+		updatedAt: timestamp('updated_at')
+			.defaultNow()
+			.$onUpdate(() => /* @__PURE__ */ new Date())
+			.notNull()
+	},
+	(table) => [unique().on(table.userId, table.name), index('variable_userId_idx').on(table.userId)]
+); // each user can only have one variable with this name
+
+// A block of text that may have multiple variables. Blocks can be referenced with the following syntax {{  }}
+export const block = pgTable(
+	'block',
+	{
+		id: text('id')
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		name: text('name').notNull(),
+		value: text('value').notNull(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: timestamp('created_at').defaultNow().notNull(),
+		updatedAt: timestamp('updated_at')
+			.defaultNow()
+			.$onUpdate(() => /* @__PURE__ */ new Date())
+			.notNull()
+	},
+	(table) => [unique().on(table.userId, table.name), index("block_userId_idx").on(table.userId)]
+); // each user can only have one block with this name
+
+export const letter = pgTable('letter', {
+	id: text('id')
+		.primaryKey()
+		.default(sql`gen_random_uuid()`),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+	updatedAt: timestamp('updated_at')
+		.defaultNow()
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+	description: text('description'),
+	title: text('title').notNull(),
+	rawContent: jsonb('raw_content'), // may have substitution strings
+	generatedContent: text('generated_content') // has no substitution keys
+}, (table) => [unique().on(table.userId, table.title), index("letter_userId_idx").on(table.userId)]);
+
+
+export const letterBlockVersions = pgTable('letter_block_versions', {
+	id: text('id')
+		.primaryKey()
+		.default(sql`gen_random_uuid()`),
+	letterId: text('letter_id')
+		.notNull()
+		.references(() => letter.id, { onDelete: 'cascade' }),
+	blockId: text('block_id').notNull(), // no foreign key - must survive block deletion
+	capturedUpdatedAt: timestamp('captured_updated_at').notNull()
+}, (table) => [
+  unique().on(table.letterId, table.blockId),
+  index('letter_block_versions_blockId_idx').on(table.blockId)
+]);
+
+export const letterVariableVersions = pgTable('letter_variable_versions', {
+  id: text('id')
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  letterId: text('letter_id')
+    .notNull()
+    .references(() => letter.id, { onDelete: 'cascade' }),
+  variableId: text('variable_id').notNull(), // no foreign key - must survive variable deletion
+  capturedUpdatedAt: timestamp('captured_updated_at').notNull()
+}, (table) => [
+  unique().on(table.letterId, table.variableId),
+  index('letter_variable_versions_variableId_idx').on(table.variableId)
+]);
+
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
-	accounts: many(account)
+	accounts: many(account),
+	variables: many(variable),
+  blocks: many(block),
+    letters: many(letter)
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
