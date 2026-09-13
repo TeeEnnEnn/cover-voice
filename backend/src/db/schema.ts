@@ -74,7 +74,7 @@ export const verification = pgTable(
 );
 
 // A single variable that can be referenced in a block with the following syntax ${}
-export const variable = pgTable(
+export const variableTable = pgTable(
 	'variable',
 	{
 		id: text('id')
@@ -95,7 +95,7 @@ export const variable = pgTable(
 ); // each user can only have one variable with this name
 
 // A block of text that may have multiple variables. Blocks can be referenced with the following syntax {{  }}
-export const block = pgTable(
+export const blockTable = pgTable(
 	'block',
 	{
 		id: text('id')
@@ -115,7 +115,7 @@ export const block = pgTable(
 	(table) => [unique().on(table.userId, table.name), index("block_userId_idx").on(table.userId)]
 ); // each user can only have one block with this name
 
-export const letter = pgTable('letter', {
+export const letterTable = pgTable('letter', {
 	id: text('id')
 		.primaryKey()
 		.default(sql`gen_random_uuid()`),
@@ -134,13 +134,13 @@ export const letter = pgTable('letter', {
 }, (table) => [unique().on(table.userId, table.title), index("letter_userId_idx").on(table.userId)]);
 
 
-export const letterBlockVersions = pgTable('letter_block_versions', {
+export const letterBlockVersionsTable = pgTable('letter_block_versions', {
 	id: text('id')
 		.primaryKey()
 		.default(sql`gen_random_uuid()`),
 	letterId: text('letter_id')
 		.notNull()
-		.references(() => letter.id, { onDelete: 'cascade' }),
+		.references(() => letterTable.id, { onDelete: 'cascade' }),
 	blockId: text('block_id').notNull(), // no foreign key - must survive block deletion
 	capturedUpdatedAt: timestamp('captured_updated_at').notNull()
 }, (table) => [
@@ -148,13 +148,13 @@ export const letterBlockVersions = pgTable('letter_block_versions', {
   index('letter_block_versions_blockId_idx').on(table.blockId)
 ]);
 
-export const letterVariableVersions = pgTable('letter_variable_versions', {
+export const letterVariableVersionsTable = pgTable('letter_variable_versions', {
   id: text('id')
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   letterId: text('letter_id')
     .notNull()
-    .references(() => letter.id, { onDelete: 'cascade' }),
+    .references(() => letterTable.id, { onDelete: 'cascade' }),
   variableId: text('variable_id').notNull(), // no foreign key - must survive variable deletion
   capturedUpdatedAt: timestamp('captured_updated_at').notNull()
 }, (table) => [
@@ -165,9 +165,9 @@ export const letterVariableVersions = pgTable('letter_variable_versions', {
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
 	accounts: many(account),
-	variables: many(variable),
-  blocks: many(block),
-    letters: many(letter)
+	variables: many(variableTable),
+  blocks: many(blockTable),
+    letters: many(letterTable)
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
