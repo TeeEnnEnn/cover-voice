@@ -21,29 +21,41 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          script_stop: true
+          script_stop: false
+          debug: true
           script: |
-            set -e
+            set -ex
             cd ~/app-prod
             PROJECT="${{ vars.COMPOSE_PROJECT_NAME }}"
 
-            if [ ! -d ".git" ]; then
+            if [ -d ".git" ]; then
+              git remote set-url origin git@github.com:${{ github.repository }}.git
+            else
               git init
-              git remote add origin https://github.com/${{ github.repository }}.git
+              git remote add origin git@github.com:${{ github.repository }}.git
             fi
 
             # Snapshot current commit so we can roll back if the new build fails the health check
             PREVIOUS_SHA=$(git rev-parse HEAD 2>/dev/null || echo "none")
 
-            # Back up the db before making changes. Migrations run automatically on boot so this is the final chance
+            # Back up the db before making changes.
             mkdir -p ~/backups
-            # Load DB credentials from .env so pg_dump gets the correct user/db (compose.yml:6-8)
+
+            # Load DB credentials from .env
             set -a; [ -f .env ] && . ./.env; set +a
-            docker compose -p "$PROJECT" exec -T db \
-            	pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/backups/pre-deploy-$(date +%Y%m%d%H%M%S).sql || true
-            ls -t ~/backups/*.sql 2>/dev/null | tail -n +6 | xargs -r rm -- # keep last 5 backups
 
+            # Safely check if 'db' is running without triggering ssh-action exit traps
+            RUNNING_SERVICES=$(docker compose -p "$PROJECT" ps --services --filter "status=running" || true)
 
+            if echo "$RUNNING_SERVICES" | grep -q "^db$"; then DB_RUNNING=yes; else DB_RUNNING=no; fi
+            if [ "$DB_RUNNING" = "yes" ]; then
+              docker compose -p "$PROJECT" exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/backups/pre-deploy-$(date +%Y%m%d%H%M%S).sql || true
+            else
+              echo "Database container not running yet — skipping pre-deploy dump."
+            fi
+
+            # Keep last 5 backups
+            ls -t ~/backups/*.sql 2>/dev/null | tail -n +6 | xargs -r rm -- || true
 
             # Pull latest changes
             git fetch origin master
@@ -52,22 +64,23 @@ jobs:
             # Rebuild and start containers
             docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans
 
+            # Health check loop
             HEALTHY=0
             for i in $(seq 1 10); do
-            	if curl -fs http://localhost/ > /dev/null; then
-             		HEALTHY=1
-               		break
-                fi
-                sleep 3
+              if curl -fs http://localhost/ > /dev/null; then
+                HEALTHY=1
+                break
+              fi
+              sleep 3
             done
 
             if [ "$HEALTHY" -ne 1 ]; then
-            	echo "Health check failed - rolling back to $PREVIOUS_SHA"
-             	if [ "$PREVIOUS_SHA" != "none" ]; then
-              		git reset --hard "$PREVIOUS_SHA"
-                	docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans
-                fi
-                exit 1
+              echo "Health check failed - rolling back to $PREVIOUS_SHA"
+              if [ "$PREVIOUS_SHA" != "none" ]; then
+                git reset --hard "$PREVIOUS_SHA"
+                docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans
+              fi
+              exit 1
             fi
 
             # Prune unused images
