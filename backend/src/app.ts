@@ -9,7 +9,7 @@ import { auth } from './auth.js';
 import { buildOpenApiDocument } from './openapi/document.js';
 import healthRouter from './routes/health.js';
 import meRouter from './routes/me.js';
-import itemsRouter from './routes/items.js';
+import blockRouter from "./routes/block.js"
 
 const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
 	.split(',')
@@ -43,8 +43,8 @@ export function createApp() {
 	app.use(express.json());
 
 	app.use('/api', healthRouter);
-	app.use('/api', meRouter);
-	app.use('/api', itemsRouter);
+  app.use('/api', meRouter);
+	app.use("/api", blockRouter)
 
 	// Swagger UI with the spec generated from the route registry.
 	const spec = buildOpenApiDocument();

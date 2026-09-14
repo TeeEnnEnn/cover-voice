@@ -18,7 +18,7 @@
       }
     },
     "schemas": {
-      "Item": {
+      "Block": {
         "type": "object",
         "properties": {
           "id": {
@@ -27,9 +27,22 @@
           },
           "name": {
             "type": "string",
-            "example": "Groceries"
+            "example": "test"
+          },
+          "value": {
+            "type": "string",
+            "example": "some value"
+          },
+          "userId": {
+            "type": "string",
+            "example": "abc123"
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-13T00:00:00.000Z"
+          },
+          "updatedAt": {
             "type": "string",
             "format": "date-time",
             "example": "2026-08-13T00:00:00.000Z"
@@ -38,35 +51,58 @@
         "required": [
           "id",
           "name",
-          "createdAt"
+          "value",
+          "userId",
+          "createdAt",
+          "updatedAt"
         ]
       },
-      "CreateItemBody": {
+      "CreateBlockBody": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 200,
-            "example": "Groceries"
+            "example": "greeting"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Hello my name is ${..."
           }
         },
         "required": [
-          "name"
+          "name",
+          "value"
         ]
       },
-      "ItemList": {
+      "UpdateBlockBody": {
         "type": "object",
         "properties": {
-          "items": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "test"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "example": "some value"
+          }
+        }
+      },
+      "BlockList": {
+        "type": "object",
+        "properties": {
+          "blocks": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Item"
+              "$ref": "#/components/schemas/Block"
             }
           }
         },
         "required": [
-          "items"
+          "blocks"
         ]
       }
     },
@@ -202,11 +238,11 @@
         }
       }
     },
-    "/api/items": {
+    "/api/blocks": {
       "get": {
-        "summary": "List the current user's items",
+        "summary": "List the current user's blocks",
         "tags": [
-          "items"
+          "blocks"
         ],
         "security": [
           {
@@ -215,11 +251,11 @@
         ],
         "responses": {
           "200": {
-            "description": "The current user's items",
+            "description": "The current user's blocks",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ItemList"
+                  "$ref": "#/components/schemas/BlockList"
                 }
               }
             }
@@ -245,9 +281,9 @@
         }
       },
       "post": {
-        "summary": "Create an item for the current user",
+        "summary": "Create a block for the current user",
         "tags": [
-          "items"
+          "blocks"
         ],
         "security": [
           {
@@ -258,18 +294,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateItemBody"
+                "$ref": "#/components/schemas/CreateBlockBody"
               }
             }
           }
         },
         "responses": {
           "201": {
-            "description": "The created item",
+            "description": "The created block",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Item"
+                  "$ref": "#/components/schemas/Block"
                 }
               }
             }
@@ -332,6 +368,258 @@
                   },
                   "required": [
                     "message"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocks/:id": {
+      "delete": {
+        "summary": "delete a block for the current user",
+        "tags": [
+          "blocks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted successfully"
+          },
+          "400": {
+            "description": "Invalid body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Block does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update a block for the current user.",
+        "tags": [
+          "blocks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBlockBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created block",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Block"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Block does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
                   ]
                 }
               }

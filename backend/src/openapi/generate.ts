@@ -5,7 +5,7 @@ import { buildOpenApiDocument } from './document.js';
 
 import '../routes/health.js';
 import '../routes/me.js';
-import '../routes/items.js';
+import "../crud/block.js";
 
 const document = buildOpenApiDocument();
 
