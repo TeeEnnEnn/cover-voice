@@ -1,3 +1,12 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+body {
+    background-color: #f7f9f9;
+}
+
+@theme {
+    --color-cover-voice-main: #2081C3;
+    --color-cover-voice-secondary: #63D2FF;
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api/client';
 
+
 	let status = $state<'idle' | 'loading' | 'ok' | 'error'>('idle');
 	let message = $state('');
 
@@ -16,11 +17,6 @@
 		message = `API: ${data.status} · DB: ${data.db}`;
 	}
 </script>
-
-<h1 class="text-2xl font-bold text-gray-900">Full-stack Svelte template</h1>
-<p class="mt-2 text-gray-600">
-	Express + Drizzle + Better Auth backend, SvelteKit frontend, types generated from an OpenAPI spec.
-</p>
 
 <div class="mt-8 rounded-lg border border-gray-200 p-4">
 	<h2 class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Backend health</h2>

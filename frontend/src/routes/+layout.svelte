@@ -7,15 +7,26 @@
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
-<header class="border-b border-gray-200">
-	<nav class="mx-auto flex max-w-2xl items-center gap-6 px-4 py-3">
-		<a href="/" class="font-semibold text-gray-900">Template</a>
-		<a href="/" class="text-sm text-gray-600 hover:text-gray-900">Health</a>
-		<a href="/items" class="text-sm text-gray-600 hover:text-gray-900">Items</a>
-		<a href="/signup" class="text-sm text-gray-600 hover:text-gray-900">Sign up</a>
+<header class="border-b border-cover-voice-main">
+	<nav class="container mx-auto flex items-center gap-6 px-4 py-3 justify-between">
+		<div>
+			<a href="/" class="font-semibold text-gray-900">Cover Voice</a>
+		</div>
+		<ul class="flex gap-6">
+			<li>
+				<a href="/signin" class="text-sm text-gray-600 hover:text-gray-900">Sign In</a>
+			</li>
+			<li>
+				<a href="/signup" class="text-sm text-gray-600 hover:text-gray-900">Sign up</a>
+			</li>
+		</ul>
 	</nav>
 </header>
 
-<main class="mx-auto max-w-2xl px-4 py-8">
+<main class="">
 	{@render children()}
 </main>
+
+<footer class="border-t border-cover-voice-main py-3">
+	<p class="text-center">Made with ❤️ by <a class="underline" href="https://github.com/TeeEnnEnn" target="_blank" rel="noopener noreferrer">TeeEnnEnn</a></p>
+</footer>
