@@ -6,7 +6,7 @@ export function buildOpenApiDocument() {
 	return generator.generateDocument({
 		openapi: '3.0.0',
 		info: {
-			title: 'Full Stack Svelte Template API',
+			title: 'Cover Voice',
 			version: '0.1.0'
 		},
 		servers: [{ url: '/' }]
