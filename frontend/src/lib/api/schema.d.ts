@@ -113,14 +113,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/items": {
+    "/api/blocks": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List the current user's items */
+        /** List the current user's blocks */
         get: {
             parameters: {
                 query?: never;
@@ -130,13 +130,13 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The current user's items */
+                /** @description The current user's blocks */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["ItemList"];
+                        "application/json": components["schemas"]["BlockList"];
                     };
                 };
                 /** @description Not authenticated */
@@ -153,7 +153,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Create an item for the current user */
+        /** Create a block for the current user */
         post: {
             parameters: {
                 query?: never;
@@ -163,17 +163,17 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["CreateItemBody"];
+                    "application/json": components["schemas"]["CreateBlockBody"];
                 };
             };
             responses: {
-                /** @description The created item */
+                /** @description The created block */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Item"];
+                        "application/json": components["schemas"]["Block"];
                     };
                 };
                 /** @description Invalid body */
@@ -212,27 +212,438 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/blocks/:id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** delete a block for the current user */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted successfully */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Block does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a block for the current user. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateBlockBody"];
+                };
+            };
+            responses: {
+                /** @description The created block */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Block"];
+                    };
+                };
+                /** @description Invalid body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Block does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/api/variables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's variables */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The current user's variables */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariableList"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a variable for the current user */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateVariableBody"];
+                };
+            };
+            responses: {
+                /** @description The created variable */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Variable"];
+                    };
+                };
+                /** @description Invalid body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/variables/:id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** delete a variable for the current user */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deleted successfully */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description variable does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Update a variable for the current user. */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateVariableBody"];
+                };
+            };
+            responses: {
+                /** @description The created variable */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Variable"];
+                    };
+                };
+                /** @description Invalid body */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description variable does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        Item: {
+        Block: {
             /** @example abc123 */
             id: string;
-            /** @example Groceries */
+            /** @example test */
             name: string;
+            /** @example some value */
+            value: string;
+            /** @example abc123 */
+            userId: string;
             /**
              * Format: date-time
              * @example 2026-08-13T00:00:00.000Z
              */
             createdAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-08-13T00:00:00.000Z
+             */
+            updatedAt: string;
         };
-        CreateItemBody: {
-            /** @example Groceries */
+        CreateBlockBody: {
+            /** @example greeting */
             name: string;
+            /** @example Hello my name is ${... */
+            value: string;
         };
-        ItemList: {
-            items: components["schemas"]["Item"][];
+        UpdateBlockBody: {
+            /** @example test */
+            name?: string;
+            /** @example some value */
+            value?: string;
+        };
+        BlockList: {
+            blocks: components["schemas"]["Block"][];
+        };
+        Variable: {
+            /** @example abc123 */
+            id: string;
+            /** @example test */
+            name: string;
+            /** @example some value */
+            value: string;
+            /** @example abc123 */
+            userId: string;
+            /**
+             * Format: date-time
+             * @example 2026-08-13T00:00:00.000Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @example 2026-08-13T00:00:00.000Z
+             */
+            updatedAt: string;
+        };
+        CreateVariableBody: {
+            /** @example linkedin */
+            name: string;
+            /** @example https://linkedin.com/... */
+            value: string;
+        };
+        UpdateVariableBody: {
+            /** @example company_name */
+            name?: string;
+            /** @example New company name */
+            value?: string;
+        };
+        VariableList: {
+            variables: components["schemas"]["Variable"][];
         };
     };
     responses: never;

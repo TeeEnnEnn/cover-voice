@@ -1,47 +1,62 @@
 <script lang="ts">
-	import { api } from '$lib/api/client';
-
-
-	let status = $state<'idle' | 'loading' | 'ok' | 'error'>('idle');
-	let message = $state('');
-
-	async function ping() {
-		status = 'loading';
-		const { data, error } = await api.GET('/api/health');
-		if (error) {
-			status = 'error';
-			message = `Backend degraded (API: ${error.status} · DB: ${error.db})`;
-			return;
-		}
-		status = 'ok';
-		message = `API: ${data.status} · DB: ${data.db}`;
-	}
+	import Step from '$lib/components/Step.svelte';
 </script>
 
-<div class="mt-8 rounded-lg border border-gray-200 p-4">
-	<h2 class="text-sm font-semibold tracking-wide text-gray-500 uppercase">Backend health</h2>
+<article class="container mx-auto my-24 space-y-24">
+	<div class="rounded-lg bg-cover-voice-main/50 p-6">
+		<hgroup class="mt-12 mb-16 flex flex-col gap-4">
+			<h2 class="text-7xl font-semibold text-gray-700">
+				Cover letters streamlined,<br /> with your voice
+			</h2>
+			<small class="text-lg text-gray-400"
+				>Simplifying cover letter writing without handing everything over to AI</small
+			>
+		</hgroup>
+		<img
+			class="mx-auto h-140"
+			src="https://images.ctfassets.net/lpvian6u6i39/CSBVIjGzg7XuBBCCk6kzO/1d2ac042a7c32ba1c4b60683a1938d64/Frame_5563.png"
+			alt="app dashboard"
+		/>
+	</div>
 
-	{#if status === 'idle'}
-		<p class="mt-2 text-sm text-gray-500">
-			Hit the button to ping <code class="font-mono">GET /api/health</code>.
-		</p>
-	{:else if status === 'loading'}
-		<p class="mt-2 text-sm text-gray-500">Pinging…</p>
-	{:else}
-		<p class="mt-2 text-sm">
-			<span
-				class="inline-block size-2 rounded-full bg-green-500"
-				class:bg-red-500={status === 'error'}
-			></span>
-			<span class="ml-1">{message}</span>
-		</p>
-	{/if}
+	<div class="flex flex-col gap-12 rounded-lg bg-cover-voice-secondary/50 p-6">
+		<Step
+			title="Add your variables"
+			imageUrl="https://cdn.stocksnap.io/img-thumbs/280h/tree-lake_VGBUM8QAAF.jpg"
+			imageAlt="tree lake"
+		/>
+		<Step
+			title="Create your blocks"
+			imageUrl="https://www.stocksy.com/cms/assets/1b47add8-d602-48cd-9c13-235fb4bfb923.jpg"
+			imageAlt="landscape rock"
+		/>
+		<Step
+			title="Compose your cover letter with blocks and variables"
+			imageUrl="https://cdn.stocksnap.io/img-thumbs/280h/landscape-rock_4EZIPYRDH0.jpg"
+			imageAlt="landscape rock"
+		/>
+		<Step
+			title="Generate a pdf of your cover letter"
+			imageUrl="https://iso.500px.com/wp-content/uploads/2015/03/business_cover.jpeg"
+			imageAlt="business cover"
+		/>
+	</div>
 
-	<button
-		class="mt-4 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-		disabled={status === 'loading'}
-		onclick={ping}
-	>
-		Ping backend
-	</button>
-</div>
+	<div class="rounded-lg bg-cover-voice-main/50 p-6">
+		<h2 class="text-4xl font-semibold">Get Started</h2>
+		<div class="flex gap-6">
+			<p class="flex-1 text-xl">
+				Make an account or sign in with your existing account to get started streamlining your cover
+				letter writing and land that dream job.
+			</p>
+			<div class="flex flex-1 flex-col gap-8">
+				<a href="/signup" class="inline-block"
+					><span>Sign Up</span> <span class="align-text-bottom">→</span></a
+				>
+				<a href="/signin" class="inline-block"
+					><span>Sign In</span> <span class="align-text-bottom">→</span></a
+				>
+			</div>
+		</div>
+	</div>
+</article>
