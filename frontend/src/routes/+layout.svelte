@@ -1,24 +1,35 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import type { LayoutProps } from './$types';
+	import { authClient } from '@/auth-client';
 
-	let { children } = $props();
+	let { data, children }: LayoutProps = $props();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <header class="border-b border-cover-voice-main">
-	<nav class="container mx-auto flex items-center gap-6 px-4 py-3 justify-between">
+	<nav class="container mx-auto flex items-center justify-between gap-6 px-4 py-4">
 		<div>
-			<a href="/" class="font-semibold text-gray-900">Cover Voice</a>
+			<a href="/" class="font-light">Cover Voice</a>
 		</div>
 		<ul class="flex gap-6">
-			<li>
-				<a href="/signin" class="text-sm text-gray-600 hover:text-gray-900">Sign In</a>
-			</li>
-			<li>
-				<a href="/signup" class="text-sm text-gray-600 hover:text-gray-900">Sign up</a>
-			</li>
+			{#if data.user}
+				<li>
+					<a href="/me" class="text-sm text-gray-600 hover:text-black font-light">Account</a>
+				</li>
+				<li>
+					<button class="text-sm text-gray-600 hover:text-black font-light" onclick={async () => {await authClient.signOut(); location.reload()}}>Sign out</button>
+				</li>
+			{:else}
+				<li>
+					<a href="/signin" class="text-sm text-gray-600 hover:text-black font-light">Sign In</a>
+				</li>
+				<li>
+					<a href="/signup" class="text-sm text-gray-600 hover:text-black font-light">Sign up</a>
+				</li>
+			{/if}
 		</ul>
 	</nav>
 </header>
@@ -27,6 +38,13 @@
 	{@render children()}
 </main>
 
-<footer class="border-t border-cover-voice-main py-3">
-	<p class="text-center">Made with ❤️ by <a class="underline" href="https://github.com/TeeEnnEnn" target="_blank" rel="noopener noreferrer">TeeEnnEnn</a></p>
+<footer class="border-t border-gray-600 py-4">
+	<p class="text-center">
+		Made by <a
+			class="underline"
+			href="https://github.com/TeeEnnEnn"
+			target="_blank"
+			rel="noopener noreferrer">TeeEnnEnn</a
+		>
+	</p>
 </footer>

@@ -1,29 +1,55 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import {
+		FieldGroup,
+		Field,
+		FieldLabel,
+		FieldDescription
+	} from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { authClient } from '$lib/auth-client';
+	import {
+		PASSWORD_MIN_LENGTH,
+		USERNAME_MIN_LENGTH,
+		validateSignup
+	} from '$lib/validation/auth.js';
 
-	const session = authClient.useSession();
-
-	let name = $state('');
+	let username = $state('');
 	let email = $state('');
 	let password = $state('');
-	let submitting = $state(false);
+	let confirmation = $state('');
 	let error = $state<string | null>(null);
-	let done = $state(false);
+	let submitting = $state(false);
 
-	async function handleSubmit() {
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		error = null;
+
+		const invalid = validateSignup({
+			username: username.trim(),
+			email: email.trim(),
+			password,
+			confirmation
+		});
+		if (invalid) {
+			error = invalid.message;
+			return;
+		}
+
 		submitting = true;
 		try {
 			const { error: authError } = await authClient.signUp.email({
-				name,
-				email,
+				name: username.trim(),
+				email: email.trim(),
 				password
 			});
 			if (authError) {
-				error = authError.message ?? 'Something went wrong';
+				error = authError.message ?? 'Failed to sign up. Please try again.';
 				return;
 			}
-			done = true;
+			await goto('/me');
 		} finally {
 			submitting = false;
 		}
@@ -31,76 +57,82 @@
 </script>
 
 <svelte:head><title>Sign up</title></svelte:head>
-
-{#if $session.data}
-	<h1 class="text-2xl font-bold text-gray-900">You're signed in</h1>
-	<p class="mt-2 text-gray-600">
-		Hello, <span class="font-semibold">{$session.data.user.name}</span>
-		({$session.data.user.email}).
-	</p>
-	<button
-		class="mt-4 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-		onclick={() => authClient.signOut()}
-	>
-		Sign out
-	</button>
-{:else if done}
-	<h1 class="text-2xl font-bold text-gray-900">Signed up!</h1>
-	<p class="mt-2 text-gray-600">
-		Your session is active. Reload the page or sign out to test the flow.
-	</p>
-{:else}
-	<h1 class="text-2xl font-bold text-gray-900">Sign up</h1>
-	<p class="mt-2 text-gray-600">
-		Create an account. This calls <code class="font-mono">POST /api/auth/sign-up/email</code> on the Express
-		backend.
-	</p>
-
-	<form
-		class="mt-6 flex max-w-sm flex-col gap-4"
-		onsubmit={(e) => {
-			e.preventDefault();
-			handleSubmit();
-		}}
-	>
-		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Name</span>
-			<input
-				bind:value={name}
-				required
-				class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900"
-			/>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Email</span>
-			<input
-				bind:value={email}
-				type="email"
-				required
-				class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900"
-			/>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Password</span>
-			<input
-				bind:value={password}
-				type="password"
-				required
-				minlength="8"
-				class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900"
-			/>
-		</label>
-
-		{#if error}
-			<p class="text-sm text-red-600">{error}</p>
-		{/if}
-
-		<button
-			class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-			type="submit"
-			disabled={submitting}
-		>
-			{submitting ? 'Creating account…' : 'Create account'}
-		</button>
-	</form>
-{/if}
+<div class="flex min-h-screen flex-col">
+	<Card.Root class="mx-auto my-36 w-full max-w-sm">
+		<Card.Header>
+			<Card.Title class="text-2xl">Sign Up</Card.Title>
+			<Card.Description
+				>Enter your email, password and username to get started with Cover voice.</Card.Description
+			>
+		</Card.Header>
+		<Card.Content>
+			<form onsubmit={handleSubmit}>
+				<FieldGroup>
+					<Field>
+						<FieldLabel for="username">Name</FieldLabel>
+						<Input
+							id="username"
+							name="username"
+							type="text"
+							minlength={USERNAME_MIN_LENGTH}
+							autocomplete="username"
+							bind:value={username}
+							required
+						/>
+					</Field>
+					<Field>
+						<FieldLabel for="email">Email</FieldLabel>
+						<Input
+							id="email"
+							name="email"
+							type="email"
+							autocomplete="email"
+							bind:value={email}
+							required
+						/>
+					</Field>
+					<Field>
+						<div class="flex items-center">
+							<FieldLabel for="password">Password</FieldLabel>
+						</div>
+						<Input
+							id="password"
+							name="password"
+							type="password"
+							minlength={PASSWORD_MIN_LENGTH}
+							autocomplete="new-password"
+							bind:value={password}
+							required
+						/>
+						<FieldDescription>
+							At least {PASSWORD_MIN_LENGTH} characters, with at least one letter and one number.
+						</FieldDescription>
+						<div class="flex items-center">
+							<FieldLabel for="confirmation">Password Confirmation</FieldLabel>
+						</div>
+						<Input
+							id="confirmation"
+							name="confirmation"
+							type="password"
+							minlength={PASSWORD_MIN_LENGTH}
+							autocomplete="new-password"
+							bind:value={confirmation}
+							required
+						/>
+					</Field>
+					{#if error}
+						<p class="text-sm text-red-600" role="alert">{error}</p>
+					{/if}
+					<Field>
+						<Button type="submit" class="w-full" disabled={submitting}>
+							{submitting ? 'Signing up…' : 'Sign Up'}
+						</Button>
+					</Field>
+				</FieldGroup>
+			</form>
+			<p class="mt-4 text-sm text-gray-600">
+				Have an account? <a href="/signin" class="underline">Sign in</a>.
+			</p>
+		</Card.Content>
+	</Card.Root>
+</div>

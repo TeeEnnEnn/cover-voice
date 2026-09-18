@@ -1,22 +1,30 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import * as Card from '$lib/components/ui/card/index.js';
+	import { Button } from '$lib/components/ui/button/index.js';
+	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
 	import { authClient } from '$lib/auth-client';
-
-	const session = authClient.useSession();
 
 	let email = $state('');
 	let password = $state('');
 	let submitting = $state(false);
 	let error = $state<string | null>(null);
 
-	async function handleSubmit() {
+	async function handleSubmit(e: SubmitEvent) {
+		e.preventDefault();
 		error = null;
 		submitting = true;
 		try {
-			const { error: authError } = await authClient.signIn.email({ email, password });
+			const { error: authError } = await authClient.signIn.email({
+				email: email.trim(),
+				password
+			});
 			if (authError) {
 				error = authError.message ?? 'Something went wrong';
 				return;
 			}
+			await goto('/me');
 		} finally {
 			submitting = false;
 		}
@@ -24,63 +32,52 @@
 </script>
 
 <svelte:head><title>Sign in</title></svelte:head>
-
-{#if $session.data}
-	<h1 class="text-2xl font-bold text-gray-900">You're signed in</h1>
-	<p class="mt-2 text-gray-600">
-		Hello, <span class="font-semibold">{$session.data.user.name}</span>. Head to
-		<a href="/items" class="underline">your items</a>.
-	</p>
-	<button
-		class="mt-4 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-		onclick={() => authClient.signOut()}
-	>
-		Sign out
-	</button>
-{:else}
-	<h1 class="text-2xl font-bold text-gray-900">Sign in</h1>
-	<p class="mt-2 text-gray-600">Sign in to access your items.</p>
-
-	<form
-		class="mt-6 flex max-w-sm flex-col gap-4"
-		onsubmit={(e) => {
-			e.preventDefault();
-			handleSubmit();
-		}}
-	>
-		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Email</span>
-			<input
-				bind:value={email}
-				type="email"
-				required
-				class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900"
-			/>
-		</label>
-		<label class="flex flex-col gap-1">
-			<span class="text-sm font-medium text-gray-700">Password</span>
-			<input
-				bind:value={password}
-				type="password"
-				required
-				class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900"
-			/>
-		</label>
-
-		{#if error}
-			<p class="text-sm text-red-600">{error}</p>
-		{/if}
-
-		<button
-			class="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
-			type="submit"
-			disabled={submitting}
-		>
-			{submitting ? 'Signing in…' : 'Sign in'}
-		</button>
-	</form>
-
-	<p class="mt-4 text-sm text-gray-600">
-		No account? <a href="/signup" class="underline">Sign up</a>.
-	</p>
-{/if}
+<div class="flex min-h-screen flex-col">
+	<Card.Root class="mx-auto my-36 w-full max-w-sm">
+		<Card.Header>
+			<Card.Title class="text-2xl">Sign In</Card.Title>
+			<Card.Description>Enter your email and password to sign in to Cover voice.</Card.Description>
+		</Card.Header>
+		<Card.Content>
+			<form onsubmit={handleSubmit}>
+				<FieldGroup>
+					<Field>
+						<FieldLabel for="email">Email</FieldLabel>
+						<Input
+							id="email"
+							name="email"
+							type="email"
+							autocomplete="email"
+							bind:value={email}
+							required
+						/>
+					</Field>
+					<Field>
+						<div class="flex items-center">
+							<FieldLabel for="password">Password</FieldLabel>
+						</div>
+						<Input
+							id="password"
+							name="password"
+							type="password"
+							autocomplete="current-password"
+							bind:value={password}
+							required
+						/>
+					</Field>
+					{#if error}
+						<p class="text-sm text-red-600" role="alert">{error}</p>
+					{/if}
+					<Field>
+						<Button type="submit" class="w-full" disabled={submitting}>
+							{submitting ? 'Signing in…' : 'Sign In'}
+						</Button>
+					</Field>
+				</FieldGroup>
+			</form>
+			<p class="mt-4 text-sm text-gray-600">
+				No account? <a href="/signup" class="underline">Sign up</a>.
+			</p>
+		</Card.Content>
+	</Card.Root>
+</div>
