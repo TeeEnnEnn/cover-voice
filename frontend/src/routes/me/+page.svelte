@@ -4,31 +4,33 @@
 	import { Label } from '@/components/ui/label/index.js';
 	import { slide } from 'svelte/transition';
 	import ItemSearch from '@/components/ItemSearch.svelte';
+	import LetterSearch from '@/components/LetterSearch.svelte';
 	import CreateToggle from '@/components/CreateToggle.svelte';
 	import type { components } from '@/api/schema.js';
+	import { goto } from '$app/navigation';
+	import { enhance } from '$app/forms';
+
 
 	type Block = components['schemas']['Block'];
 	type Variable = components['schemas']['Variable'];
 	type Letter = components['schemas']['Letter'];
 
-	let { data } = $props();
+	let { data, form } = $props();
 	let user = $derived(data.user);
 	let blocks = $derived(data.blocks);
 	let variables = $derived(data.variables);
 	let blockError = $derived(data.blockError);
 	let variableError = $derived(data.variableError);
+	let letters = $derived(data.letters);
+	let letterError = $derived(data.letterError);
 
 	let selectedBlock: Block | null = $state(null);
 	let selectedVariable: Variable | null = $state(null);
-	let selectedLetter = $state(null);
+	let selectedLetter: Letter | null = $state(null);
 
 	let blockItems = $derived(blocks?.blocks ?? []);
 	let variableItems = $derived(variables?.variables ?? []);
-
-	$effect(() => {
-		console.log({ blocks });
-		console.log({ variables });
-	});
+	let letterItems = $derived(letters?.letters ?? []);
 
 	let creatingNewLetter = $state(false);
 	let creatingNewBlock = $state(false);
@@ -57,6 +59,22 @@
 	const greeting = greeting_choices[Math.floor((Math.random() * 100) % greeting_choices.length)];
 	const second_greeting =
 		second_greeting_choices[Math.floor((Math.random() * 100) % second_greeting_choices.length)];
+
+	let countdown = $state(5);
+	$effect(() => {
+		if (form?.action === 'newLetter' && form?.success) {
+			creatingNewLetter = false;
+			countdown = 5;
+			const interval = setInterval(() => {
+				countdown -= 1;
+				if (countdown <= 0) {
+					clearInterval(interval);
+					goto(`/letters/${form?.letter.id}`);
+				}
+			}, 1000);
+			return () => clearInterval(interval);
+		}
+	});
 </script>
 
 <div class="container mx-auto my-24 space-y-16">
@@ -69,14 +87,36 @@
 		<div class="flex w-full flex-col gap-10 lg:flex-row">
 			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
 				<h3 class="text-2xl font-thin">Letters</h3>
+				<div>
+					{#if letterError}
+						<p class="text-lg font-medium text-red-400">{letterError.message}</p>
+					{:else}
+						<LetterSearch
+							letters={letterItems}
+							selected={selectedLetter}
+							onSelect={(letter) => {
+								selectedLetter = letter;
+							}}
+							label="letter"
+						/>
+					{/if}
+				</div>
 				<CreateToggle bind:creating={creatingNewLetter} label="Letter" />
 				<div class="mt-auto">
+					{#if form?.action === 'newLetter' && form?.success}
+						<div class="flex flex-col">
+							<p class="text-lg text-green-400">New Letter created successfully!</p>
+							<small class="text-sm font-light text-muted-foreground"
+								>Redirecting to new letter page in {countdown} seconds</small
+							>
+						</div>
+					{/if}
 					{#if creatingNewLetter}
 						<div transition:slide>
-							<form action="?/newLetter" method="post" class="flex flex-col gap-4 font-light">
+							<form action="?/newLetter" method="post" class="flex flex-col gap-4 font-light" use:enhance>
 								<h4 class="text-xl">Add a new letter</h4>
 								<div>
-									<Label for="letterName" class="text-lg font-light">Name</Label>
+									<Label for="letterName" class="text-lg font-light">Title</Label>
 									<Input type="text" id="letterName" name="letterName" />
 								</div>
 								<div>
@@ -110,7 +150,7 @@
 				<div class="mt-auto space-y-6">
 					{#if creatingNewBlock}
 						<div transition:slide>
-							<form action="?/newBlock" method="post" class="flex flex-col gap-4 font-light">
+							<form action="?/newBlock" method="post" class="flex flex-col gap-4 font-light"use:enhance>
 								<h4 class="text-xl">Add a new block</h4>
 								<div>
 									<Label for="blockName" class="text-lg font-light">block name</Label>
@@ -131,7 +171,7 @@
 				</div>
 			</div>
 			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3  class="text-2xl font-thin">Variables</h3>
+				<h3 class="text-2xl font-thin">Variables</h3>
 				<div>
 					{#if variableError}
 						<p class="text-lg font-medium text-red-400">{variableError.message}</p>
@@ -151,7 +191,7 @@
 				<div class="mt-auto">
 					{#if creatingNewVariable}
 						<div transition:slide>
-							<form action="?/newVariable" method="post" class="flex flex-col gap-4 font-light">
+							<form action="?/newVariable" method="post" class="flex flex-col gap-4 font-light"use:enhance>
 								<h4 class="text-xl">Add a new Variable</h4>
 								<div>
 									<Label for="variableName" class="text-lg font-light">Name</Label>

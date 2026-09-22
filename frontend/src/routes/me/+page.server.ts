@@ -2,6 +2,11 @@ import type { PageServerLoad, Actions } from './$types';
 import { requireUser } from '$lib/server/auth';
 import { createApiClient } from '@/api/client';
 import { fail } from '@sveltejs/kit';
+	import type { components } from '@/api/schema.js';
+
+type Block = components['schemas']['Block'];
+	type Variable = components['schemas']['Variable'];
+	type Letter = components['schemas']['Letter'];
 
 export const load: PageServerLoad = async ({ fetch, request }) => {
 	const cookie = request.headers.get('cookie');
@@ -9,30 +14,55 @@ export const load: PageServerLoad = async ({ fetch, request }) => {
 
 	const api = createApiClient(fetch, cookie);
 
-	const resultArray = await Promise.all([
-		await api.GET('/api/blocks'),
-		await api.GET('/api/variables')
+	const [blockResult, variableResult, letterResult] = await Promise.all([
+		api.GET('/api/blocks'),
+		api.GET('/api/variables'),
+		api.GET('/api/letters')
 	]);
-	const { data: blockData, error: blockError } = resultArray[0];
-	const { data: variableData, error: variableError } = resultArray[1];
+	const { data: blockData, error: blockError } = blockResult;
+	const { data: variableData, error: variableError } = variableResult;
+	const { data: letterData, error: letterError } = letterResult;
 
 	return {
 		user: user,
 		blocks: blockData,
 		blockError: blockError,
 		variables: variableData,
-		variableError: variableError
+		variableError: variableError,
+		letters: letterData,
+		letterError: letterError
 	};
 };
 
 export const actions = {
 	newLetter: async ({ request, fetch }) => {
-		await requireUser(fetch, request.headers.get('cookie'));
+		const cookie = request.headers.get('cookie');
+		await requireUser(fetch, cookie);
 		const formData = await request.formData();
 		const letterName = formData.get('letterName')?.toString().trim();
 		const letterDescription = formData.get('letterDescription')?.toString().trim();
-	},
 
+		if (!letterName || !letterDescription) {
+			return fail(400, {
+				action: 'newLetter',
+				message: 'Letter name and description are required.'
+			});
+		}
+
+		const api = createApiClient(fetch, cookie);
+		const { data: letterData, error: letterError } = await api.POST('/api/letters', {
+			body: {
+				title: letterName,
+				description: letterDescription
+			}
+		});
+
+		if (letterError) {
+			return fail(400, { action: 'newLetter', message: 'Failed to create letter.' });
+		}
+
+		return { action: 'newLetter' as const, success: true, letter: letterData as Letter, message: '' };
+	},
 	newBlock: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
@@ -55,9 +85,8 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'newBlock', message: 'Failed to create block.' });
 		}
-		return { success: true, newBlock: data, message: '' };
+		return { action: 'newBlock' as const, success: true, newBlock: data as Block, message: '' };
 	},
-
 	newVariable: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
@@ -80,10 +109,9 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'newVariable', message: 'Failed to create variable.' });
 		}
-		return { success: true, newVariable: data, message: '' };
+		return { action: 'newVariable' as const, success: true, newVariable: data as Variable, message: '' };
 	},
-
- 	updateVariable: async ({ request, fetch }) => {
+	updateVariable: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
 		const formData = await request.formData();
@@ -96,7 +124,10 @@ export const actions = {
 		}
 
 		if (!variableName || !variableValue) {
-			return fail(400, { action: 'updateVariable', message: 'Variable name and value are required.' });
+			return fail(400, {
+				action: 'updateVariable',
+				message: 'Variable name and value are required.'
+			});
 		}
 
 		const api = createApiClient(fetch, cookie);
@@ -115,7 +146,7 @@ export const actions = {
 		}
 		return { success: true, updateVariable: data, message: '' };
 	},
- 	deleteVariable: async ({ request, fetch }) => {
+	deleteVariable: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
 		const formData = await request.formData();
@@ -137,7 +168,7 @@ export const actions = {
 		}
 		return { success: true, deleteVariable: data, message: '' };
 	},
- 	updateBlock: async ({ request, fetch }) => {
+	updateBlock: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
 		const formData = await request.formData();
@@ -169,7 +200,7 @@ export const actions = {
 		}
 		return { success: true, updateBlock: data, message: '' };
 	},
- 	deleteBlock: async ({ request, fetch }) => {
+	deleteBlock: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
 		await requireUser(fetch, cookie);
 		const formData = await request.formData();
@@ -189,6 +220,60 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'deleteBlock', message: 'Failed to delete block.' });
 		}
-		return { success: true, message: '' };
+		return { action: 'deleteBlock' as const, success: true, message: '' };
+	},
+	updateLetter: async ({ request, fetch }) => {
+		const cookie = request.headers.get('cookie');
+		await requireUser(fetch, cookie);
+		const formData = await request.formData();
+		const letterId = formData.get('letterId')?.toString().trim();
+		const letterTitle = formData.get('letterTitle')?.toString().trim();
+		const letterDescription = formData.get('letterDescription')?.toString().trim() ?? '';
+
+		if (!letterId) {
+			return fail(400, { action: 'updateLetter', message: 'Letter id is required.' });
+		}
+
+		if (!letterTitle) {
+			return fail(400, { action: 'updateLetter', message: 'Letter title is required.' });
+		}
+
+		const api = createApiClient(fetch, cookie);
+		const { data, error: err } = await api.PATCH('/api/letters/:id', {
+			params: {
+				path: { id: letterId }
+			},
+			body: {
+				title: letterTitle,
+				description: letterDescription
+			}
+		});
+
+		if (err) {
+			return fail(400, { action: 'updateLetter', message: 'Failed to update letter.' });
+		}
+		return { action: 'updateLetter' as const, success: true, letter: data as Letter, message: '' };
+	},
+	deleteLetter: async ({ request, fetch }) => {
+		const cookie = request.headers.get('cookie');
+		await requireUser(fetch, cookie);
+		const formData = await request.formData();
+		const letterId = formData.get('letterId')?.toString().trim();
+
+		if (!letterId) {
+			return fail(400, { action: 'deleteLetter', message: 'Letter id is required.' });
+		}
+
+		const api = createApiClient(fetch, cookie);
+		const { error: err } = await api.DELETE('/api/letters/:id', {
+			params: {
+				path: { id: letterId }
+			}
+		});
+
+		if (err) {
+			return fail(400, { action: 'deleteLetter', message: 'Failed to delete letter.' });
+		}
+		return { action: 'deleteLetter' as const, success: true, message: '' };
 	}
 } satisfies Actions;
