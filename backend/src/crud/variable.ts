@@ -153,7 +153,7 @@ export async function getVariables(userId: string) {
 		.select()
 		.from(variableTable)
 		.where(eq(variableTable.userId, userId))
-		.orderBy(desc(variableTable.createdAt));
+		.orderBy(desc(variableTable.updatedAt));
 	return {
 		variables: rows
 	};

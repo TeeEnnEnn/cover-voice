@@ -153,7 +153,7 @@ export async function getBlocks(userId: string) {
 		.select()
 		.from(blockTable)
 		.where(eq(blockTable.userId, userId))
-		.orderBy(desc(blockTable.createdAt));
+		.orderBy(desc(blockTable.updatedAt));
 	return {
 		blocks: rows
 	};

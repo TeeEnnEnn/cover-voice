@@ -7,7 +7,7 @@ import { auth } from '../auth.js';
 const user = z.object({
 	id: z.string(),
 	name: z.string(),
-	email: z.string().email()
+	email: z.email()
 });
 const meOk = z.object({ user });
 const unauthorized = z.object({

@@ -9,9 +9,9 @@ import { auth } from './auth.js';
 import { buildOpenApiDocument } from './openapi/document.js';
 import healthRouter from './routes/health.js';
 import meRouter from './routes/me.js';
-import blockRouter from "./routes/block.js"
-import variableRouter from "./routes/variables.js"
-
+import blockRouter from './routes/block.js';
+import variableRouter from './routes/variables.js';
+import letterRouter from './routes/letters.js';
 
 const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
 	.split(',')
@@ -21,7 +21,10 @@ const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
 const httpLogger = pinoHttp({
 	logger: pino({
 		level: process.env.NODE_ENV === 'test' ? 'silent' : (process.env.LOG_LEVEL ?? 'info')
-	})
+	}),
+	autoLogging: {
+		ignore: (req) => req.url === '/api/health'
+	}
 });
 
 export function createApp() {
@@ -45,9 +48,10 @@ export function createApp() {
 	app.use(express.json());
 
 	app.use('/api', healthRouter);
-  app.use('/api', meRouter);
-  app.use("/api", blockRouter)
-	app.use("/api", variableRouter)
+	app.use('/api', meRouter);
+	app.use('/api', blockRouter);
+	app.use('/api', variableRouter);
+	app.use('/api', letterRouter);
 
 	// Swagger UI with the spec generated from the route registry.
 	const spec = buildOpenApiDocument();
