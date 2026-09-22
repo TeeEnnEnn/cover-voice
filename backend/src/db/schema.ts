@@ -112,62 +112,73 @@ export const blockTable = pgTable(
 			.$onUpdate(() => /* @__PURE__ */ new Date())
 			.notNull()
 	},
-	(table) => [unique().on(table.userId, table.name), index("block_userId_idx").on(table.userId)]
+	(table) => [unique().on(table.userId, table.name), index('block_userId_idx').on(table.userId)]
 ); // each user can only have one block with this name
 
-export const letterTable = pgTable('letter', {
-	id: text('id')
-		.primaryKey()
-		.default(sql`gen_random_uuid()`),
-	userId: text('user_id')
-		.notNull()
-		.references(() => user.id, { onDelete: 'cascade' }),
-	createdAt: timestamp('created_at').defaultNow().notNull(),
-	updatedAt: timestamp('updated_at')
-		.defaultNow()
-		.$onUpdate(() => /* @__PURE__ */ new Date())
-		.notNull(),
-	description: text('description'),
-	title: text('title').notNull(),
-	rawContent: jsonb('raw_content'), // may have substitution strings
-	generatedContent: text('generated_content') // has no substitution keys
-}, (table) => [unique().on(table.userId, table.title), index("letter_userId_idx").on(table.userId)]);
+export const letterTable = pgTable(
+	'letter',
+	{
+		id: text('id')
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		createdAt: timestamp('created_at').defaultNow().notNull(),
+		updatedAt: timestamp('updated_at')
+			.defaultNow()
+			.$onUpdate(() => /* @__PURE__ */ new Date())
+			.notNull(),
+		description: text('description'),
+		title: text('title').notNull(),
+		rawContent: jsonb('raw_content'), // may have substitution strings
+		generatedContent: jsonb('generated_content') // has no substitution keys
+	},
+	(table) => [unique().on(table.userId, table.title), index('letter_userId_idx').on(table.userId)]
+);
 
+export const letterBlockVersionsTable = pgTable(
+	'letter_block_versions',
+	{
+		id: text('id')
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		letterId: text('letter_id')
+			.notNull()
+			.references(() => letterTable.id, { onDelete: 'cascade' }),
+		blockId: text('block_id').notNull(), // no foreign key - must survive block deletion
+		capturedUpdatedAt: timestamp('captured_updated_at').notNull()
+	},
+	(table) => [
+		unique().on(table.letterId, table.blockId),
+		index('letter_block_versions_blockId_idx').on(table.blockId)
+	]
+);
 
-export const letterBlockVersionsTable = pgTable('letter_block_versions', {
-	id: text('id')
-		.primaryKey()
-		.default(sql`gen_random_uuid()`),
-	letterId: text('letter_id')
-		.notNull()
-		.references(() => letterTable.id, { onDelete: 'cascade' }),
-	blockId: text('block_id').notNull(), // no foreign key - must survive block deletion
-	capturedUpdatedAt: timestamp('captured_updated_at').notNull()
-}, (table) => [
-  unique().on(table.letterId, table.blockId),
-  index('letter_block_versions_blockId_idx').on(table.blockId)
-]);
-
-export const letterVariableVersionsTable = pgTable('letter_variable_versions', {
-  id: text('id')
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  letterId: text('letter_id')
-    .notNull()
-    .references(() => letterTable.id, { onDelete: 'cascade' }),
-  variableId: text('variable_id').notNull(), // no foreign key - must survive variable deletion
-  capturedUpdatedAt: timestamp('captured_updated_at').notNull()
-}, (table) => [
-  unique().on(table.letterId, table.variableId),
-  index('letter_variable_versions_variableId_idx').on(table.variableId)
-]);
+export const letterVariableVersionsTable = pgTable(
+	'letter_variable_versions',
+	{
+		id: text('id')
+			.primaryKey()
+			.default(sql`gen_random_uuid()`),
+		letterId: text('letter_id')
+			.notNull()
+			.references(() => letterTable.id, { onDelete: 'cascade' }),
+		variableId: text('variable_id').notNull(), // no foreign key - must survive variable deletion
+		capturedUpdatedAt: timestamp('captured_updated_at').notNull()
+	},
+	(table) => [
+		unique().on(table.letterId, table.variableId),
+		index('letter_variable_versions_variableId_idx').on(table.variableId)
+	]
+);
 
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
 	accounts: many(account),
 	variables: many(variableTable),
-  blocks: many(blockTable),
-    letters: many(letterTable)
+	blocks: many(blockTable),
+	letters: many(letterTable)
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({

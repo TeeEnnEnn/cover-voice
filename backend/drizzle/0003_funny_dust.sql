@@ -1,0 +1,1 @@
+ALTER TABLE "letter" ALTER COLUMN "generated_content" SET DATA TYPE jsonb;
