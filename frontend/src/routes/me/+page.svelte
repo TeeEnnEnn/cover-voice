@@ -1,11 +1,15 @@
-<script>
-	import { Button } from '@/components/ui/button/index.js';
+<script lang="ts">
 	import { Input } from '@/components/ui/input/index.js';
 	import { Textarea } from '@/components/ui/textarea/index.js';
 	import { Label } from '@/components/ui/label/index.js';
 	import { slide } from 'svelte/transition';
-	import VariableTeaser from '@/components/VariableTeaser.svelte';
-	import BlockTeaser from '@/components/BlockTeaser.svelte';
+	import ItemSearch from '@/components/ItemSearch.svelte';
+	import CreateToggle from '@/components/CreateToggle.svelte';
+	import type { components } from '@/api/schema.js';
+
+	type Block = components['schemas']['Block'];
+	type Variable = components['schemas']['Variable'];
+	type Letter = components['schemas']['Letter'];
 
 	let { data } = $props();
 	let user = $derived(data.user);
@@ -13,6 +17,13 @@
 	let variables = $derived(data.variables);
 	let blockError = $derived(data.blockError);
 	let variableError = $derived(data.variableError);
+
+	let selectedBlock: Block | null = $state(null);
+	let selectedVariable: Variable | null = $state(null);
+	let selectedLetter = $state(null);
+
+	let blockItems = $derived(blocks?.blocks ?? []);
+	let variableItems = $derived(variables?.variables ?? []);
 
 	$effect(() => {
 		console.log({ blocks });
@@ -35,36 +46,30 @@
 		'Hi',
 		"Where've you been"
 	];
+	const second_greeting_choices = [
+		'What will you do today?',
+		'What interview will you land today?',
+		'Knock that cover letter out the park!',
+		'All the best today!',
+		'Give it a hundred and ten percent!'
+	];
+
 	const greeting = greeting_choices[Math.floor((Math.random() * 100) % greeting_choices.length)];
+	const second_greeting =
+		second_greeting_choices[Math.floor((Math.random() * 100) % second_greeting_choices.length)];
 </script>
 
 <div class="container mx-auto my-24 space-y-16">
 	<hgroup>
 		<h2 class="text-4xl font-thin">{greeting}, <span class="">{user.name}</span></h2>
-		<small class="text-lg font-light text-gray-600">What will you do today?</small>
+		<small class="text-lg font-light text-gray-600">{second_greeting}</small>
 	</hgroup>
 
 	<div>
-		<div class="flex w-full gap-12">
+		<div class="flex w-full flex-col gap-10 lg:flex-row">
 			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3 class="text-xl font-light">Letters</h3>
-				<div>
-					{#if creatingNewLetter}
-						<Button
-							variant="destructive"
-							onclick={() => {
-								creatingNewLetter = false;
-							}}>Cancel</Button
-						>
-					{:else}
-						<Button
-							variant="outline"
-							onclick={() => {
-								creatingNewLetter = true;
-							}}>New Letter</Button
-						>
-					{/if}
-				</div>
+				<h3 class="text-2xl font-thin">Letters</h3>
+				<CreateToggle bind:creating={creatingNewLetter} label="Letter" />
 				<div class="mt-auto">
 					{#if creatingNewLetter}
 						<div transition:slide>
@@ -85,35 +90,23 @@
 				</div>
 			</div>
 			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3 class="text-2xl font-light">Blocks</h3>
+				<h3 class="text-2xl font-thin">Blocks</h3>
 				<div>
 					{#if blockError}
 						<p class="text-lg font-medium text-red-400">{blockError.message}</p>
 					{:else}
-						<div class="flex flex-col gap-2">
-							{#each blocks?.blocks as block}
-								<BlockTeaser {...block} />
-							{/each}
-						</div>
+						<ItemSearch
+							items={blockItems}
+							selected={selectedBlock}
+							onSelect={(block) => {
+								selectedBlock = block;
+							}}
+							label="block"
+							kind="block"
+						/>
 					{/if}
 				</div>
-				<div>
-					{#if creatingNewBlock}
-						<Button
-							variant="destructive"
-							onclick={() => {
-								creatingNewBlock = false;
-							}}>Cancel</Button
-						>
-					{:else}
-						<Button
-							variant="outline"
-							onclick={() => {
-								creatingNewBlock = true;
-							}}>New Block</Button
-						>
-					{/if}
-				</div>
+				<CreateToggle bind:creating={creatingNewBlock} label="Block" />
 				<div class="mt-auto space-y-6">
 					{#if creatingNewBlock}
 						<div transition:slide>
@@ -138,35 +131,23 @@
 				</div>
 			</div>
 			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3 class="text-xl font-light">Variables</h3>
+				<h3  class="text-2xl font-thin">Variables</h3>
 				<div>
 					{#if variableError}
 						<p class="text-lg font-medium text-red-400">{variableError.message}</p>
 					{:else}
-						<div class="flex flex-col gap-2">
-							{#each variables?.variables as variable}
-								<VariableTeaser {...variable} />
-							{/each}
-						</div>
+						<ItemSearch
+							items={variableItems}
+							selected={selectedVariable}
+							onSelect={(variable) => {
+								selectedVariable = variable;
+							}}
+							label="variable"
+							kind="variable"
+						/>
 					{/if}
 				</div>
-				<div>
-					{#if creatingNewVariable}
-						<Button
-							variant="destructive"
-							onclick={() => {
-								creatingNewVariable = false;
-							}}>Cancel</Button
-						>
-					{:else}
-						<Button
-							variant="outline"
-							onclick={() => {
-								creatingNewVariable = true;
-							}}>New Variable</Button
-						>
-					{/if}
-				</div>
+				<CreateToggle bind:creating={creatingNewVariable} label="Variable" />
 				<div class="mt-auto">
 					{#if creatingNewVariable}
 						<div transition:slide>

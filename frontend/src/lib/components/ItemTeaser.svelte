@@ -9,7 +9,8 @@
 		value,
 		userId,
 		createdAt,
-		updatedAt
+		updatedAt,
+		kind = 'block'
 	}: {
 		id: string;
 		name: string;
@@ -17,31 +18,41 @@
 		userId: string;
 		createdAt: string;
 		updatedAt: string;
+		kind?: 'block' | 'variable';
 	} = $props();
 
 	let isEditing = $state(false);
+
+	let updateAction = $derived(kind === 'block' ? '?/updateBlock' : '?/updateVariable');
+	let deleteAction = $derived(kind === 'block' ? '?/deleteBlock' : '?/deleteVariable');
+	let nameField = $derived(kind === 'block' ? 'blockName' : 'variableName');
+	let valueField = $derived(kind === 'block' ? 'blockValue' : 'variableValue');
+	let idField = $derived(kind === 'block' ? 'blockId' : 'variableId');
 </script>
 
 <div class="rounded-lg border border-gray-300 p-4">
-	<form method="post" action="?/updateVariable" class="flex flex-col gap-4">
+	<form method="post" action={updateAction} class="flex flex-col gap-4">
 		<div class="flex flex-col gap-2">
-			<Label for="variableName-{id}">Name</Label>
+			<Label for="blockName-{id}">Name</Label>
 			{#if isEditing}
-				<Input value={name} required name="variableName" id="variableName-{id}" />
+				<Input value={name} required name={nameField} id="blockName-{id}" />
 			{:else}
 				<Input value={name} disabled />
 			{/if}
 		</div>
 		<div class="flex flex-col gap-2">
-			<Label for="variableValue-{id}">Value</Label>
+			<Label for="blockValue-{id}">Value</Label>
 			{#if isEditing}
-				<Input {value} required name="variableValue" id="variableValue-{id}" />
+				<Input {value} required name={valueField} id="blockValue-{id}" />
 			{:else}
 				<Input {value} disabled />
 			{/if}
 		</div>
-		<input type="hidden" value={id} name="variableId" />
-		<small>last updated: {Intl.DateTimeFormat('en-GB').format(new Date(updatedAt))}</small>
+		<input type="hidden" value={id} name={idField} />
+		<div class="flex flex-col gap-1 text-muted-foreground">
+			<small>created: {Intl.DateTimeFormat('en-GB').format(new Date(createdAt))}</small>
+			<small>updated: {Intl.DateTimeFormat('en-GB').format(new Date(updatedAt))}</small>
+		</div>
 		<div class="flex gap-2">
 			{#if isEditing}
 				<Button
@@ -52,12 +63,8 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input class="flex-2" type="submit" value="Update" />
-				<Button
-					class="flex-1"
-					variant="destructive"
-					type="submit"
-					formaction="?/deleteVariable"
+				<Input class="flex-3" type="submit" value="Update" />
+				<Button class="flex-1" variant="destructive" type="submit" formaction={deleteAction}
 					><svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="24"
@@ -76,8 +83,8 @@
 				>
 			{:else}
 				<Button
-					variant="outline"
 					type="button"
+					variant="outline"
 					onclick={() => {
 						isEditing = true;
 					}}>Edit</Button
