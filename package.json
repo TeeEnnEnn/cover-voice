@@ -3,7 +3,9 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"prepare": "husky"
+		"prepare": "husky",
+		"up": "docker compose up --build",
+		"down": "docker compose down -v"
 	},
 	"engines": {
 		"node": ">=26"

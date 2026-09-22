@@ -15,6 +15,9 @@ export default defineConfig({
       adapter: adapter(),
       alias: {
         "@/*": "./src/lib"
+      },
+      csrf: {
+        "trustedOrigins": ["http://localhost", "http://localhost:3000", "http://localhost:5173"]
       }
 		})
 	],
