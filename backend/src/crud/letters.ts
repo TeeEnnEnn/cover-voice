@@ -60,7 +60,40 @@ export const addLetterVariableSchema = registry.register(
 	})
 );
 
-export const generateLetterSchema = registry.register('GenerateLetterBody', z.object({}));
+export const letterGenerationSchema = registry.register("LetterGenerationSchema", z.object({
+  config: z.object({
+    font: z.enum(["Courier", "Helvetica", "Times-Roman"]).openapi({ example: 'Courier' }),
+    fontSize: z.number().openapi({ example: 16 }).positive(),
+    fontColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).openapi({ example: '#000000' }),
+    backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).openapi({ example: '#ffffff' }),
+    lineHeight: z.number().openapi({ example: 1.5 }),
+    textDirection: z.enum(['ltr', 'rtl']).openapi({ example: 'ltr' }),
+    pageSize: z.enum(['A4', 'Letter']).openapi({ example: 'A4' }),
+    marginLeft: z.number().openapi({ example: 10 }).nonnegative(), // points
+    marginRight: z.number().openapi({ example: 10 }).nonnegative(), // points
+    marginTop: z.number().openapi({ example: 10 }).nonnegative(), // points
+    marginBottom: z.number().openapi({ example: 10 }).nonnegative(), // points
+  }),
+  sections: z.object({
+    header: z.object({
+      text: z.string().openapi({ example: 'address' }).nullable(),
+      layout: z.enum(['left', 'right', 'center', "full"]).openapi({ example: 'left' }).default("right"),
+    }),
+    body: z.object({
+      text: z.string().openapi({ example: 'main content' }).nullable(),
+      layout: z.enum(['left', 'right', 'center', "full"]).openapi({ example: 'left' }).default("left"),
+    }),
+    footer: z.object({
+      text: z.string().openapi({ example: 'signature and sign off' }).nullable(),
+      layout: z.enum(['left', 'right', 'center', "full"]).openapi({ example: 'left' }).default("left"),
+    }),
+  })
+}));
+
+export const generateLetterSchema = registry.register('GenerateLetterBody', z.object({
+  letterId: z.string().openapi({ example: "abc123" }),
+  letterGenerationContent: letterGenerationSchema, // will still have substitution keys at this point
+}));
 
 export const letterBlockLinkSchema = registry.register(
 	'LetterBlockLink',

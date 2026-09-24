@@ -73,7 +73,7 @@ export const verification = pgTable(
 	(table) => [index('verification_identifier_idx').on(table.identifier)]
 );
 
-// A single variable that can be referenced in a block with the following syntax ${}
+// A single variable that can be referenced in a block
 export const variableTable = pgTable(
 	'variable',
 	{
@@ -94,7 +94,7 @@ export const variableTable = pgTable(
 	(table) => [unique().on(table.userId, table.name), index('variable_userId_idx').on(table.userId)]
 ); // each user can only have one variable with this name
 
-// A block of text that may have multiple variables. Blocks can be referenced with the following syntax {{  }}
+// A block of text that may have multiple variables.
 export const blockTable = pgTable(
 	'block',
 	{
