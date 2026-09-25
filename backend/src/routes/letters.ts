@@ -1,17 +1,170 @@
 import { Router } from 'express';
+import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import {
 	createLetter,
-	createLetterSchema,
 	deleteLetter,
-	generateLetterSchema,
 	getLetterById,
 	getLetters,
-	updateLetter,
-	updateLetterSchema
+	updateLetter
 } from '../crud/letters.js';
+import {
+	letterSchema,
+	letterListSchema,
+	createLetterSchema,
+	updateLetterSchema,
+	generateLetterSchema
+} from '../schemas/letters.js';
+import { validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
+import { registry } from '../openapi/registry.js';
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/letters',
+	summary: "List the current user's letters",
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	responses: {
+		200: {
+			description: "The current user's letters",
+			content: { 'application/json': { schema: letterListSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'post',
+	path: '/api/letters',
+	summary: 'Create a letter for the current user',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		body: {
+			content: { 'application/json': { schema: createLetterSchema } }
+		}
+	},
+	responses: {
+		201: {
+			description: 'The created letter',
+			content: { 'application/json': { schema: letterSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'delete',
+	path: '/api/letters/:id',
+	summary: 'delete a letter for the current user',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		204: {
+			description: 'Deleted successfully'
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'patch',
+	path: '/api/letters/:id',
+	summary: 'Update a letter for the current user.',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		body: {
+			content: { 'application/json': { schema: updateLetterSchema } }
+		},
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'The updated letter',
+			content: { 'application/json': { schema: letterSchema } }
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/letters/:id',
+	summary: 'Get a single letter for the current user.',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'The requested letter',
+			content: { 'application/json': { schema: letterSchema } }
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'post',
+	path: '/api/letters/:id/generate',
+	summary: 'Generate letter content from pinned blocks/variables.',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		body: {
+			content: { 'application/json': { schema: generateLetterSchema } }
+		}
+	},
+	responses: {
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
 
 const router = Router();
 

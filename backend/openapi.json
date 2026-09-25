@@ -192,201 +192,94 @@
           "variables"
         ]
       },
-      "Letter": {
+      "LetterConfigSchema": {
         "type": "object",
         "properties": {
-          "id": {
+          "font": {
             "type": "string",
-            "example": "abc123"
+            "enum": [
+              "Courier",
+              "Helvetica",
+              "Times-Roman"
+            ],
+            "example": "Courier"
           },
-          "userId": {
+          "fontSize": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "example": 16
+          },
+          "fontColor": {
             "type": "string",
-            "example": "abc123"
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "example": "#000000"
           },
-          "createdAt": {
+          "backgroundColor": {
             "type": "string",
-            "format": "date-time",
-            "example": "2026-08-13T00:00:00.000Z"
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "example": "#ffffff"
           },
-          "updatedAt": {
+          "lineHeight": {
+            "type": "number",
+            "example": 1.5
+          },
+          "textDirection": {
             "type": "string",
-            "format": "date-time",
-            "example": "2026-08-13T00:00:00.000Z"
+            "enum": [
+              "ltr",
+              "rtl"
+            ],
+            "example": "ltr"
           },
-          "title": {
+          "pageSize": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 50,
-            "example": "Application at Acme"
+            "enum": [
+              "A4",
+              "Letter"
+            ],
+            "example": "A4"
           },
-          "description": {
-            "type": "string",
-            "nullable": true,
-            "example": "Cover letter for Acme"
+          "marginLeft": {
+            "type": "number",
+            "minimum": 0,
+            "example": 10
           },
-          "rawContent": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "nullable": true
-            },
-            "example": {}
+          "marginRight": {
+            "type": "number",
+            "minimum": 0,
+            "example": 10
           },
-          "generatedContent": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "nullable": true
-            },
-            "example": {}
+          "marginTop": {
+            "type": "number",
+            "minimum": 0,
+            "example": 10
+          },
+          "marginBottom": {
+            "type": "number",
+            "minimum": 0,
+            "example": 10
           }
         },
         "required": [
-          "id",
-          "userId",
-          "createdAt",
-          "updatedAt",
-          "title",
-          "rawContent",
-          "generatedContent"
+          "font",
+          "fontSize",
+          "fontColor",
+          "backgroundColor",
+          "lineHeight",
+          "textDirection",
+          "pageSize",
+          "marginLeft",
+          "marginRight",
+          "marginTop",
+          "marginBottom"
         ]
-      },
-      "CreateLetterBody": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 50,
-            "example": "Application at Acme"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true,
-            "example": "Cover letter for Acme"
-          }
-        },
-        "required": [
-          "title"
-        ]
-      },
-      "UpdateLetterBody": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 50,
-            "example": "Application at Acme"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true,
-            "example": "Cover letter for Acme"
-          },
-          "rawContent": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "nullable": true
-            },
-            "example": {}
-          },
-          "generatedContent": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "nullable": true
-            },
-            "example": {}
-          }
-        }
       },
       "LetterGenerationSchema": {
         "type": "object",
         "properties": {
           "config": {
-            "type": "object",
-            "properties": {
-              "font": {
-                "type": "string",
-                "enum": [
-                  "Courier",
-                  "Helvetica",
-                  "Times-Roman"
-                ],
-                "example": "Courier"
-              },
-              "fontSize": {
-                "type": "number",
-                "minimum": 0,
-                "exclusiveMinimum": true,
-                "example": 16
-              },
-              "fontColor": {
-                "type": "string",
-                "pattern": "^#[0-9A-Fa-f]{6}$",
-                "example": "#000000"
-              },
-              "backgroundColor": {
-                "type": "string",
-                "pattern": "^#[0-9A-Fa-f]{6}$",
-                "example": "#ffffff"
-              },
-              "lineHeight": {
-                "type": "number",
-                "example": 1.5
-              },
-              "textDirection": {
-                "type": "string",
-                "enum": [
-                  "ltr",
-                  "rtl"
-                ],
-                "example": "ltr"
-              },
-              "pageSize": {
-                "type": "string",
-                "enum": [
-                  "A4",
-                  "Letter"
-                ],
-                "example": "A4"
-              },
-              "marginLeft": {
-                "type": "number",
-                "minimum": 0,
-                "example": 10
-              },
-              "marginRight": {
-                "type": "number",
-                "minimum": 0,
-                "example": 10
-              },
-              "marginTop": {
-                "type": "number",
-                "minimum": 0,
-                "example": 10
-              },
-              "marginBottom": {
-                "type": "number",
-                "minimum": 0,
-                "example": 10
-              }
-            },
-            "required": [
-              "font",
-              "fontSize",
-              "fontColor",
-              "backgroundColor",
-              "lineHeight",
-              "textDirection",
-              "pageSize",
-              "marginLeft",
-              "marginRight",
-              "marginTop",
-              "marginBottom"
-            ]
+            "$ref": "#/components/schemas/LetterConfigSchema"
           },
           "sections": {
             "type": "object",
@@ -476,20 +369,286 @@
           "sections"
         ]
       },
-      "GenerateLetterBody": {
+      "Letter": {
         "type": "object",
         "properties": {
-          "letterId": {
+          "id": {
             "type": "string",
             "example": "abc123"
           },
-          "letterGenerationContent": {
+          "userId": {
+            "type": "string",
+            "example": "abc123"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-13T00:00:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-13T00:00:00.000Z"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Application at Acme"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Cover letter for Acme"
+          },
+          "rawContent": {
+            "$ref": "#/components/schemas/LetterGenerationSchema"
+          },
+          "generatedContent": {
             "$ref": "#/components/schemas/LetterGenerationSchema"
           }
         },
         "required": [
-          "letterId",
-          "letterGenerationContent"
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "title",
+          "rawContent",
+          "generatedContent"
+        ]
+      },
+      "CreateLetterBody": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Application at Acme"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Cover letter for Acme"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateLetterBody": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "example": "Application at Acme"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Cover letter for Acme"
+          },
+          "rawContent": {
+            "$ref": "#/components/schemas/LetterGenerationSchema"
+          },
+          "generatedContent": {
+            "$ref": "#/components/schemas/LetterGenerationSchema"
+          }
+        },
+        "required": [
+          "rawContent",
+          "generatedContent"
+        ]
+      },
+      "GenerateLetterBody": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/LetterConfigSchema"
+          },
+          "sections": {
+            "type": "object",
+            "properties": {
+              "header": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "address"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "right",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "main content"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "footer": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "signature and sign off"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "header",
+              "body",
+              "footer"
+            ]
+          }
+        },
+        "required": [
+          "config",
+          "sections"
+        ]
+      },
+      "PreviewLetterBody": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "$ref": "#/components/schemas/LetterConfigSchema"
+          },
+          "sections": {
+            "type": "object",
+            "properties": {
+              "header": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "address"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "right",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "main content"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "footer": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "signature and sign off"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "header",
+              "body",
+              "footer"
+            ]
+          }
+        },
+        "required": [
+          "config",
+          "sections"
         ]
       },
       "LetterList": {

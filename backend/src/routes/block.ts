@@ -1,15 +1,114 @@
 import { Router } from 'express';
+import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
+import { getBlocks, createBlock, deleteBlock, updateBlock } from '../crud/block.js';
 import {
+	blockSchema,
+	blockListSchema,
 	createBlockSchema,
-	getBlocks,
-	createBlock,
-	deleteBlock,
-	updateBlock,
 	updateBlockSchema
-} from '../crud/block.js';
+} from '../schemas/blocks.js';
+import { validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
+import { registry } from '../openapi/registry.js';
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/blocks',
+	summary: "List the current user's blocks",
+	tags: ['blocks'],
+	security: [{ cookieAuth: [] }],
+	responses: {
+		200: {
+			description: "The current user's blocks",
+			content: { 'application/json': { schema: blockListSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'post',
+	path: '/api/blocks',
+	summary: 'Create a block for the current user',
+	tags: ['blocks'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		body: {
+			content: { 'application/json': { schema: createBlockSchema } }
+		}
+	},
+	responses: {
+		201: {
+			description: 'The created block',
+			content: { 'application/json': { schema: blockSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'delete',
+	path: '/api/blocks/:id',
+	summary: 'delete a block for the current user',
+	tags: ['blocks'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		204: {
+			description: 'Deleted successfully'
+		},
+		404: {
+			description: 'Block does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'patch',
+	path: '/api/blocks/:id',
+	summary: 'Update a block for the current user.',
+	tags: ['blocks'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		body: {
+			content: { 'application/json': { schema: updateBlockSchema } }
+		},
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'The created block',
+			content: { 'application/json': { schema: blockSchema } }
+		},
+		404: {
+			description: 'Block does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
 
 const router = Router();
 
