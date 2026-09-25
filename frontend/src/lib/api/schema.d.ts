@@ -850,310 +850,6 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/letters/:id/blocks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pin a block to a letter (stub: records the block version). */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["AddLetterBlockBody"];
-                };
-            };
-            responses: {
-                /** @description The pinned block link */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LetterBlockLink"];
-                    };
-                };
-                /** @description Invalid body */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-                /** @description Not authenticated */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            message: string;
-                        };
-                    };
-                };
-                /** @description Letter or block does not exist */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/letters/:id/blocks/:blockId": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Unpin a block from a letter (stub). */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    blockId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Unpinned successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not authenticated */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            message: string;
-                        };
-                    };
-                };
-                /** @description Letter or pinned block does not exist */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/letters/:id/variables": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Pin a variable to a letter (stub: records the variable version). */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["AddLetterVariableBody"];
-                };
-            };
-            responses: {
-                /** @description The pinned variable link */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["LetterVariableLink"];
-                    };
-                };
-                /** @description Invalid body */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-                /** @description Not authenticated */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            message: string;
-                        };
-                    };
-                };
-                /** @description Letter or variable does not exist */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/letters/:id/variables/:variableId": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Unpin a variable from a letter (stub). */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    variableId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Unpinned successfully */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Not authenticated */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            message: string;
-                        };
-                    };
-                };
-                /** @description Letter or pinned variable does not exist */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/letters/:id/generate": {
         parameters: {
             query?: never;
@@ -1163,7 +859,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate letter content from pinned blocks/variables (stub: not implemented). */
+        /** Generate letter content from pinned blocks/variables. */
         post: {
             parameters: {
                 query?: never;
@@ -1192,23 +888,6 @@ export interface paths {
                 };
                 /** @description Letter does not exist */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-                /** @description Not implemented */
-                501: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1354,40 +1033,77 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
-        AddLetterBlockBody: {
-            /** @example abc123 */
-            blockId: string;
+        LetterGenerationSchema: {
+            config: {
+                /**
+                 * @example Courier
+                 * @enum {string}
+                 */
+                font: "Courier" | "Helvetica" | "Times-Roman";
+                /** @example 16 */
+                fontSize: number;
+                /** @example #000000 */
+                fontColor: string;
+                /** @example #ffffff */
+                backgroundColor: string;
+                /** @example 1.5 */
+                lineHeight: number;
+                /**
+                 * @example ltr
+                 * @enum {string}
+                 */
+                textDirection: "ltr" | "rtl";
+                /**
+                 * @example A4
+                 * @enum {string}
+                 */
+                pageSize: "A4" | "Letter";
+                /** @example 10 */
+                marginLeft: number;
+                /** @example 10 */
+                marginRight: number;
+                /** @example 10 */
+                marginTop: number;
+                /** @example 10 */
+                marginBottom: number;
+            };
+            sections: {
+                header: {
+                    /** @example address */
+                    text: string | null;
+                    /**
+                     * @default right
+                     * @example left
+                     * @enum {string}
+                     */
+                    layout: "left" | "right" | "center" | "full";
+                };
+                body: {
+                    /** @example main content */
+                    text: string | null;
+                    /**
+                     * @default left
+                     * @example left
+                     * @enum {string}
+                     */
+                    layout: "left" | "right" | "center" | "full";
+                };
+                footer: {
+                    /** @example signature and sign off */
+                    text: string | null;
+                    /**
+                     * @default left
+                     * @example left
+                     * @enum {string}
+                     */
+                    layout: "left" | "right" | "center" | "full";
+                };
+            };
         };
-        AddLetterVariableBody: {
-            /** @example abc123 */
-            variableId: string;
-        };
-        GenerateLetterBody: Record<string, never>;
-        LetterBlockLink: {
-            /** @example abc123 */
-            id: string;
+        GenerateLetterBody: {
             /** @example abc123 */
             letterId: string;
-            /** @example abc123 */
-            blockId: string;
-            /**
-             * Format: date-time
-             * @example 2026-08-13T00:00:00.000Z
-             */
-            capturedUpdatedAt: string;
-        };
-        LetterVariableLink: {
-            /** @example abc123 */
-            id: string;
-            /** @example abc123 */
-            letterId: string;
-            /** @example abc123 */
-            variableId: string;
-            /**
-             * Format: date-time
-             * @example 2026-08-13T00:00:00.000Z
-             */
-            capturedUpdatedAt: string;
+            letterGenerationContent: components["schemas"]["LetterGenerationSchema"];
         };
         LetterList: {
             letters: components["schemas"]["Letter"][];

@@ -302,88 +302,194 @@
           }
         }
       },
-      "AddLetterBlockBody": {
+      "LetterGenerationSchema": {
         "type": "object",
         "properties": {
-          "blockId": {
-            "type": "string",
-            "example": "abc123"
+          "config": {
+            "type": "object",
+            "properties": {
+              "font": {
+                "type": "string",
+                "enum": [
+                  "Courier",
+                  "Helvetica",
+                  "Times-Roman"
+                ],
+                "example": "Courier"
+              },
+              "fontSize": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "example": 16
+              },
+              "fontColor": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "example": "#000000"
+              },
+              "backgroundColor": {
+                "type": "string",
+                "pattern": "^#[0-9A-Fa-f]{6}$",
+                "example": "#ffffff"
+              },
+              "lineHeight": {
+                "type": "number",
+                "example": 1.5
+              },
+              "textDirection": {
+                "type": "string",
+                "enum": [
+                  "ltr",
+                  "rtl"
+                ],
+                "example": "ltr"
+              },
+              "pageSize": {
+                "type": "string",
+                "enum": [
+                  "A4",
+                  "Letter"
+                ],
+                "example": "A4"
+              },
+              "marginLeft": {
+                "type": "number",
+                "minimum": 0,
+                "example": 10
+              },
+              "marginRight": {
+                "type": "number",
+                "minimum": 0,
+                "example": 10
+              },
+              "marginTop": {
+                "type": "number",
+                "minimum": 0,
+                "example": 10
+              },
+              "marginBottom": {
+                "type": "number",
+                "minimum": 0,
+                "example": 10
+              }
+            },
+            "required": [
+              "font",
+              "fontSize",
+              "fontColor",
+              "backgroundColor",
+              "lineHeight",
+              "textDirection",
+              "pageSize",
+              "marginLeft",
+              "marginRight",
+              "marginTop",
+              "marginBottom"
+            ]
+          },
+          "sections": {
+            "type": "object",
+            "properties": {
+              "header": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "address"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "right",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "main content"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              },
+              "footer": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "signature and sign off"
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": [
+                      "left",
+                      "right",
+                      "center",
+                      "full"
+                    ],
+                    "default": "left",
+                    "example": "left"
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "header",
+              "body",
+              "footer"
+            ]
           }
         },
         "required": [
-          "blockId"
-        ]
-      },
-      "AddLetterVariableBody": {
-        "type": "object",
-        "properties": {
-          "variableId": {
-            "type": "string",
-            "example": "abc123"
-          }
-        },
-        "required": [
-          "variableId"
+          "config",
+          "sections"
         ]
       },
       "GenerateLetterBody": {
         "type": "object",
-        "properties": {}
-      },
-      "LetterBlockLink": {
-        "type": "object",
         "properties": {
-          "id": {
-            "type": "string",
-            "example": "abc123"
-          },
           "letterId": {
             "type": "string",
             "example": "abc123"
           },
-          "blockId": {
-            "type": "string",
-            "example": "abc123"
-          },
-          "capturedUpdatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-08-13T00:00:00.000Z"
+          "letterGenerationContent": {
+            "$ref": "#/components/schemas/LetterGenerationSchema"
           }
         },
         "required": [
-          "id",
           "letterId",
-          "blockId",
-          "capturedUpdatedAt"
-        ]
-      },
-      "LetterVariableLink": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "abc123"
-          },
-          "letterId": {
-            "type": "string",
-            "example": "abc123"
-          },
-          "variableId": {
-            "type": "string",
-            "example": "abc123"
-          },
-          "capturedUpdatedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-08-13T00:00:00.000Z"
-          }
-        },
-        "required": [
-          "id",
-          "letterId",
-          "variableId",
-          "capturedUpdatedAt"
+          "letterGenerationContent"
         ]
       },
       "LetterList": {
@@ -1800,517 +1906,9 @@
         }
       }
     },
-    "/api/letters/:id/blocks": {
-      "post": {
-        "summary": "Pin a block to a letter (stub: records the block version).",
-        "tags": [
-          "letters"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddLetterBlockBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The pinned block link",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LetterBlockLink"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Letter or block does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/letters/:id/blocks/:blockId": {
-      "delete": {
-        "summary": "Unpin a block from a letter (stub).",
-        "tags": [
-          "letters"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "blockId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Unpinned successfully"
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Letter or pinned block does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/letters/:id/variables": {
-      "post": {
-        "summary": "Pin a variable to a letter (stub: records the variable version).",
-        "tags": [
-          "letters"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AddLetterVariableBody"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The pinned variable link",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LetterVariableLink"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Letter or variable does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/letters/:id/variables/:variableId": {
-      "delete": {
-        "summary": "Unpin a variable from a letter (stub).",
-        "tags": [
-          "letters"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "id",
-            "in": "path"
-          },
-          {
-            "schema": {
-              "type": "string",
-              "example": "abc123"
-            },
-            "required": true,
-            "name": "variableId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Unpinned successfully"
-          },
-          "401": {
-            "description": "Not authenticated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Letter or pinned variable does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/letters/:id/generate": {
       "post": {
-        "summary": "Generate letter content from pinned blocks/variables (stub: not implemented).",
+        "summary": "Generate letter content from pinned blocks/variables.",
         "tags": [
           "letters"
         ],
@@ -2360,51 +1958,6 @@
           },
           "404": {
             "description": "Letter does not exist",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "message": {
-                          "type": "string"
-                        },
-                        "details": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "message": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "message"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "message",
-                        "details"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Not implemented",
             "content": {
               "application/json": {
                 "schema": {

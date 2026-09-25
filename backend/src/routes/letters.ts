@@ -1,18 +1,12 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/require-auth.js';
 import {
-	addLetterBlock,
-	addLetterBlockSchema,
-	addLetterVariable,
-	addLetterVariableSchema,
 	createLetter,
 	createLetterSchema,
 	deleteLetter,
 	generateLetterSchema,
 	getLetterById,
 	getLetters,
-	removeLetterBlock,
-	removeLetterVariable,
 	updateLetter,
 	updateLetterSchema
 } from '../crud/letters.js';
@@ -70,64 +64,6 @@ router.patch(
 		res.status(200).json(serializeTimestamps(updated));
 	}
 );
-
-router.post(
-	'/letters/:id/blocks',
-	requireAuth,
-	validate({ body: addLetterBlockSchema }),
-	async (req, res) => {
-		const userId = res.locals.user!.id;
-		const letterId = req.params.id as string;
-		const link = await addLetterBlock(userId, letterId, req.body.blockId);
-		if (!link) {
-			res.status(404).json({ error: { message: 'Letter or block not found', details: [] } });
-			return;
-		}
-		res.status(201).json(serializeTimestamps(link));
-	}
-);
-
-router.delete('/letters/:id/blocks/:blockId', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const letterId = req.params.id as string;
-	const blockId = req.params.blockId as string;
-	const removed = await removeLetterBlock(userId, letterId, blockId);
-	if (!removed) {
-		res.status(404).json({ error: { message: 'Letter or pinned block not found', details: [] } });
-		return;
-	}
-	res.status(204).send();
-});
-
-router.post(
-	'/letters/:id/variables',
-	requireAuth,
-	validate({ body: addLetterVariableSchema }),
-	async (req, res) => {
-		const userId = res.locals.user!.id;
-		const letterId = req.params.id as string;
-		const link = await addLetterVariable(userId, letterId, req.body.variableId);
-		if (!link) {
-			res.status(404).json({ error: { message: 'Letter or variable not found', details: [] } });
-			return;
-		}
-		res.status(201).json(serializeTimestamps(link));
-	}
-);
-
-router.delete('/letters/:id/variables/:variableId', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const letterId = req.params.id as string;
-	const variableId = req.params.variableId as string;
-	const removed = await removeLetterVariable(userId, letterId, variableId);
-	if (!removed) {
-		res
-			.status(404)
-			.json({ error: { message: 'Letter or pinned variable not found', details: [] } });
-		return;
-	}
-	res.status(204).send();
-});
 
 router.post(
 	'/letters/:id/generate',

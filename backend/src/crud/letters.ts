@@ -1,13 +1,7 @@
 import z from 'zod';
 import { registry } from '../openapi/registry.js';
 import { db } from '../db/index.js';
-import {
-	blockTable,
-	letterBlockVersionsTable,
-	letterTable,
-	letterVariableVersionsTable,
-	variableTable
-} from '../db/schema.js';
+import { blockTable, letterTable, variableTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 
 export const letterSchema = registry.register(
@@ -46,20 +40,6 @@ export const updateLetterSchema = registry.register(
 	})
 );
 
-export const addLetterBlockSchema = registry.register(
-	'AddLetterBlockBody',
-	z.object({
-		blockId: z.string().openapi({ example: 'abc123' })
-	})
-);
-
-export const addLetterVariableSchema = registry.register(
-	'AddLetterVariableBody',
-	z.object({
-		variableId: z.string().openapi({ example: 'abc123' })
-	})
-);
-
 export const letterGenerationSchema = registry.register("LetterGenerationSchema", z.object({
   config: z.object({
     font: z.enum(["Courier", "Helvetica", "Times-Roman"]).openapi({ example: 'Courier' }),
@@ -90,34 +70,12 @@ export const letterGenerationSchema = registry.register("LetterGenerationSchema"
   })
 }));
 
+export type LetterGeneration = z.infer<typeof letterGenerationSchema>;
+
 export const generateLetterSchema = registry.register('GenerateLetterBody', z.object({
   letterId: z.string().openapi({ example: "abc123" }),
   letterGenerationContent: letterGenerationSchema, // will still have substitution keys at this point
 }));
-
-export const letterBlockLinkSchema = registry.register(
-	'LetterBlockLink',
-	z.object({
-		id: z.string().openapi({ example: 'abc123' }),
-		letterId: z.string().openapi({ example: 'abc123' }),
-		blockId: z.string().openapi({ example: 'abc123' }),
-		capturedUpdatedAt: z
-			.string()
-			.openapi({ format: 'date-time', example: '2026-08-13T00:00:00.000Z' })
-	})
-);
-
-export const letterVariableLinkSchema = registry.register(
-	'LetterVariableLink',
-	z.object({
-		id: z.string().openapi({ example: 'abc123' }),
-		letterId: z.string().openapi({ example: 'abc123' }),
-		variableId: z.string().openapi({ example: 'abc123' }),
-		capturedUpdatedAt: z
-			.string()
-			.openapi({ format: 'date-time', example: '2026-08-13T00:00:00.000Z' })
-	})
-);
 
 export const letterListSchema = registry.register(
 	'LetterList',
@@ -262,126 +220,8 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'post',
-	path: '/api/letters/:id/blocks',
-	summary: 'Pin a block to a letter (stub: records the block version).',
-	tags: ['letters'],
-	security: [{ cookieAuth: [] }],
-	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
-		body: {
-			content: { 'application/json': { schema: addLetterBlockSchema } }
-		}
-	},
-	responses: {
-		201: {
-			description: 'The pinned block link',
-			content: { 'application/json': { schema: letterBlockLinkSchema } }
-		},
-		400: {
-			description: 'Invalid body',
-			content: { 'application/json': { schema: validationError } }
-		},
-		404: {
-			description: 'Letter or block does not exist',
-			content: { 'application/json': { schema: validationError } }
-		},
-		401: {
-			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
-		}
-	}
-});
-
-registry.registerPath({
-	method: 'delete',
-	path: '/api/letters/:id/blocks/:blockId',
-	summary: 'Unpin a block from a letter (stub).',
-	tags: ['letters'],
-	security: [{ cookieAuth: [] }],
-	request: {
-		params: z.object({
-			id: z.string().openapi({ example: 'abc123' }),
-			blockId: z.string().openapi({ example: 'abc123' })
-		})
-	},
-	responses: {
-		204: {
-			description: 'Unpinned successfully'
-		},
-		404: {
-			description: 'Letter or pinned block does not exist',
-			content: { 'application/json': { schema: validationError } }
-		},
-		401: {
-			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
-		}
-	}
-});
-
-registry.registerPath({
-	method: 'post',
-	path: '/api/letters/:id/variables',
-	summary: 'Pin a variable to a letter (stub: records the variable version).',
-	tags: ['letters'],
-	security: [{ cookieAuth: [] }],
-	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
-		body: {
-			content: { 'application/json': { schema: addLetterVariableSchema } }
-		}
-	},
-	responses: {
-		201: {
-			description: 'The pinned variable link',
-			content: { 'application/json': { schema: letterVariableLinkSchema } }
-		},
-		400: {
-			description: 'Invalid body',
-			content: { 'application/json': { schema: validationError } }
-		},
-		404: {
-			description: 'Letter or variable does not exist',
-			content: { 'application/json': { schema: validationError } }
-		},
-		401: {
-			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
-		}
-	}
-});
-
-registry.registerPath({
-	method: 'delete',
-	path: '/api/letters/:id/variables/:variableId',
-	summary: 'Unpin a variable from a letter (stub).',
-	tags: ['letters'],
-	security: [{ cookieAuth: [] }],
-	request: {
-		params: z.object({
-			id: z.string().openapi({ example: 'abc123' }),
-			variableId: z.string().openapi({ example: 'abc123' })
-		})
-	},
-	responses: {
-		204: {
-			description: 'Unpinned successfully'
-		},
-		404: {
-			description: 'Letter or pinned variable does not exist',
-			content: { 'application/json': { schema: validationError } }
-		},
-		401: {
-			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
-		}
-	}
-});
-
-registry.registerPath({
-	method: 'post',
 	path: '/api/letters/:id/generate',
-	summary: 'Generate letter content from pinned blocks/variables (stub: not implemented).',
+	summary: 'Generate letter content from pinned blocks/variables.',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
@@ -391,10 +231,6 @@ registry.registerPath({
 		}
 	},
 	responses: {
-		501: {
-			description: 'Not implemented',
-			content: { 'application/json': { schema: validationError } }
-		},
 		404: {
 			description: 'Letter does not exist',
 			content: { 'application/json': { schema: validationError } }
@@ -472,121 +308,20 @@ export async function getLetterById(userId: string, id: string) {
 	return result.length === 0 ? null : result[0];
 }
 
-export async function addLetterBlock(userId: string, letterId: string, blockId: string) {
-	const userLetter = await db
-		.select()
-		.from(letterTable)
-		.where(and(eq(letterTable.id, letterId), eq(letterTable.userId, userId)));
-	const userBlock = await db
-		.select()
-		.from(blockTable)
-		.where(and(eq(blockTable.id, blockId), eq(blockTable.userId, userId)));
-	if (userLetter.length === 0 || userBlock.length === 0) {
-		return null;
-	}
-	const result = await db
-		.insert(letterBlockVersionsTable)
-		.values({
-			letterId: letterId,
-			blockId: blockId,
-			capturedUpdatedAt: userBlock[0].updatedAt
-		})
-		.onConflictDoNothing()
-		.returning();
-	if (result.length > 0) {
-		return result[0];
-	}
-	const existing = await db
-		.select()
-		.from(letterBlockVersionsTable)
-		.where(
-			and(
-				eq(letterBlockVersionsTable.letterId, letterId),
-				eq(letterBlockVersionsTable.blockId, blockId)
-			)
-		);
-	return existing[0] ?? null;
-}
-
-export async function removeLetterBlock(userId: string, letterId: string, blockId: string) {
-	const letter = await db
+export async function generateLetter(userId: string, letterId: string, letterGenerationContent: LetterGeneration) {
+  const letter = await db
 		.select()
 		.from(letterTable)
 		.where(and(eq(letterTable.userId, userId), eq(letterTable.id, letterId)));
 
 	if (letter.length === 0) {
 		return null;
-	}
+  }
 
-	const result = await db
-		.delete(letterBlockVersionsTable)
-		.where(
-			and(
-				eq(letterBlockVersionsTable.letterId, letterId),
-				eq(letterBlockVersionsTable.blockId, blockId)
-			)
-		)
-		.returning();
-	return result.length === 0 ? null : result[0];
-}
+  // get user blocks
 
-export async function addLetterVariable(userId: string, letterId: string, variableId: string) {
-	const userLetter = await db
-		.select()
-		.from(letterTable)
-		.where(and(eq(letterTable.id, letterId), eq(letterTable.userId, userId)));
-	const userVariable = await db
-		.select()
-		.from(variableTable)
-		.where(and(eq(variableTable.id, variableId), eq(variableTable.userId, userId)));
-	if (userLetter.length === 0 || userVariable.length === 0) {
-		return null;
-	}
-	const result = await db
-		.insert(letterVariableVersionsTable)
-		.values({
-			letterId: letterId,
-			variableId: variableId,
-			capturedUpdatedAt: userVariable[0].updatedAt
-		})
-		.onConflictDoNothing()
-		.returning();
-	if (result.length > 0) {
-		return result[0];
-	}
-	const existing = await db
-		.select()
-		.from(letterVariableVersionsTable)
-		.where(
-			and(
-				eq(letterVariableVersionsTable.letterId, letterId),
-				eq(letterVariableVersionsTable.variableId, variableId)
-			)
-		);
-	return existing[0] ?? null;
-}
-export async function removeLetterVariable(userId: string, letterId: string, variableId: string) {
-	const letter = await db
-		.select()
-		.from(letterTable)
-		.where(and(eq(letterTable.userId, userId), eq(letterTable.id, letterId)));
+  // get user variables
 
-	if (letter.length === 0) {
-		return null;
-	}
+  const headerText =  letterGenerationContent.sections.header
 
-	const result = await db
-		.delete(letterVariableVersionsTable)
-		.where(
-			and(
-				eq(letterVariableVersionsTable.letterId, letterId),
-				eq(letterVariableVersionsTable.variableId, variableId)
-			)
-		)
-		.returning();
-	return result.length === 0 ? null : result[0];
-}
-
-export async function generateLetter(_userId: string, _letterId: string) {
-	throw new Error('Not implemented');
 }
