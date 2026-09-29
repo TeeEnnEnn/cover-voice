@@ -2,12 +2,14 @@ import { Router } from 'express';
 import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import { getBlocks, createBlock, deleteBlock, updateBlock } from '../crud/block.js';
+import { getBlockUsage } from '../crud/usage.js';
 import {
 	blockSchema,
 	blockListSchema,
 	createBlockSchema,
 	updateBlockSchema
 } from '../schemas/blocks.js';
+import { blockUsageSchema, forceQuerySchema } from '../schemas/usage.js';
 import { validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
@@ -60,12 +62,13 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'delete',
-	path: '/api/blocks/:id',
+	path: '/api/blocks/{id}',
 	summary: 'delete a block for the current user',
 	tags: ['blocks'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		query: forceQuerySchema
 	},
 	responses: {
 		204: {
@@ -78,13 +81,42 @@ registry.registerPath({
 		400: {
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Block is still referenced; usage is returned so the client can confirm',
+			content: { 'application/json': { schema: blockUsageSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/blocks/{id}/usage',
+	summary: 'Get usage counts for a block (letters using it, variables it uses)',
+	tags: ['blocks'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'Usage counts for the block',
+			content: { 'application/json': { schema: blockUsageSchema } }
+		},
+		404: {
+			description: 'Block does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
 		}
 	}
 });
 
 registry.registerPath({
 	method: 'patch',
-	path: '/api/blocks/:id',
+	path: '/api/blocks/{id}',
 	summary: 'Update a block for the current user.',
 	tags: ['blocks'],
 	security: [{ cookieAuth: [] }],
@@ -124,15 +156,43 @@ router.post('/blocks', requireAuth, validate({ body: createBlockSchema }), async
 	res.status(201).json(serializeTimestamps(insertedBlock));
 });
 
-router.delete('/blocks/:id', requireAuth, async (req, res) => {
+router.delete(
+	'/blocks/:id',
+	requireAuth,
+	validate({ query: forceQuerySchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const blockId = req.params.id as string;
+		const force = req.query.force === 'true';
+		if (!force) {
+			const usage = await getBlockUsage(userId, blockId);
+			if (!usage) {
+				res.status(404).json({ error: { message: 'Block not found', details: [] } });
+				return;
+			}
+			if (usage.letterCount > 0 || usage.variableCount > 0) {
+				res.status(409).json(usage);
+				return;
+			}
+		}
+		const updated = await deleteBlock(userId, blockId);
+		if (!updated) {
+			res.status(404).json({ error: { message: 'Block not found', details: [] } });
+			return;
+		}
+		res.status(204).send();
+	}
+);
+
+router.get('/blocks/:id/usage', requireAuth, async (req, res) => {
 	const userId = res.locals.user!.id;
 	const blockId = req.params.id as string;
-	const updated = await deleteBlock(userId, blockId);
-	if (!updated) {
+	const usage = await getBlockUsage(userId, blockId);
+	if (!usage) {
 		res.status(404).json({ error: { message: 'Block not found', details: [] } });
 		return;
 	}
-	res.status(204).send();
+	res.json(usage);
 });
 
 router.patch(

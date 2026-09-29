@@ -4,10 +4,12 @@ import { requireAuth } from '../middleware/require-auth.js';
 import {
 	createLetter,
 	deleteLetter,
+	generateLetter,
 	getLetterById,
 	getLetters,
 	updateLetter
 } from '../crud/letters.js';
+import { getLetterUsage } from '../crud/usage.js';
 import {
 	letterSchema,
 	letterListSchema,
@@ -15,6 +17,7 @@ import {
 	updateLetterSchema,
 	generateLetterSchema
 } from '../schemas/letters.js';
+import { letterUsageSchema } from '../schemas/usage.js';
 import { validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
@@ -67,7 +70,7 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'delete',
-	path: '/api/letters/:id',
+	path: '/api/letters/{id}',
 	summary: 'delete a letter for the current user',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
@@ -91,7 +94,7 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'patch',
-	path: '/api/letters/:id',
+	path: '/api/letters/{id}',
 	summary: 'Update a letter for the current user.',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
@@ -119,7 +122,7 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'get',
-	path: '/api/letters/:id',
+	path: '/api/letters/{id}',
 	summary: 'Get a single letter for the current user.',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
@@ -144,7 +147,7 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'post',
-	path: '/api/letters/:id/generate',
+	path: '/api/letters/{id}/generate',
 	summary: 'Generate letter content from pinned blocks/variables.',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
@@ -155,6 +158,39 @@ registry.registerPath({
 		}
 	},
 	responses: {
+		200: {
+			description: 'The generated letter',
+			content: { 'application/json': { schema: letterSchema } }
+		},
+		422: {
+			description: 'Unknown block/variable reference in a section; nothing was written',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/letters/{id}/usage',
+	summary: 'Get usage counts for a letter (blocks and variables it uses)',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'Usage counts for the letter',
+			content: { 'application/json': { schema: letterUsageSchema } }
+		},
 		404: {
 			description: 'Letter does not exist',
 			content: { 'application/json': { schema: validationErrorSchema } }
@@ -191,6 +227,17 @@ router.get('/letters/:id', requireAuth, async (req, res) => {
 	res.status(200).json(serializeTimestamps(letter));
 });
 
+router.get('/letters/:id/usage', requireAuth, async (req, res) => {
+	const userId = res.locals.user!.id;
+	const letterId = req.params.id as string;
+	const usage = await getLetterUsage(userId, letterId);
+	if (!usage) {
+		res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+		return;
+	}
+	res.json(usage);
+});
+
 router.delete('/letters/:id', requireAuth, async (req, res) => {
 	const userId = res.locals.user!.id;
 	const letterId = req.params.id as string;
@@ -222,8 +269,24 @@ router.post(
 	'/letters/:id/generate',
 	requireAuth,
 	validate({ body: generateLetterSchema }),
-	async (_req, res) => {
-		res.status(501).json({ error: { message: 'Letter generation not implemented', details: [] } });
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const result = await generateLetter(userId, letterId, req.body);
+		if (result === null) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		if (!result.ok) {
+			res.status(422).json({
+				error: {
+					message: result.error.hint,
+					details: [{ path: `sections.${result.error.section}`, message: result.error.hint }]
+				}
+			});
+			return;
+		}
+		res.status(200).json(serializeTimestamps(result.letter));
 	}
 );
 

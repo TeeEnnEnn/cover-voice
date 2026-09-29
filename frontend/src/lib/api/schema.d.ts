@@ -212,7 +212,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/blocks/:id": {
+    "/api/blocks/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -225,7 +225,9 @@ export interface paths {
         /** delete a block for the current user */
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    force?: "true" | "false";
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -273,6 +275,15 @@ export interface paths {
                                 }[];
                             };
                         };
+                    };
+                };
+                /** @description Block is still referenced; usage is returned so the client can confirm */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlockUsage"];
                     };
                 };
             };
@@ -340,6 +351,72 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/blocks/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get usage counts for a block (letters using it, variables it uses) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usage counts for the block */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlockUsage"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Block does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/variables": {
@@ -441,7 +518,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/variables/:id": {
+    "/api/variables/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -454,7 +531,9 @@ export interface paths {
         /** delete a variable for the current user */
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    force?: "true" | "false";
+                };
                 header?: never;
                 path: {
                     id: string;
@@ -502,6 +581,15 @@ export interface paths {
                                 }[];
                             };
                         };
+                    };
+                };
+                /** @description Variable is still referenced; usage is returned so the client can confirm */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariableUsage"];
                     };
                 };
             };
@@ -569,6 +657,72 @@ export interface paths {
                 };
             };
         };
+        trace?: never;
+    };
+    "/api/variables/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get usage counts for a variable (blocks and letters using it) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usage counts for the variable */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariableUsage"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description variable does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/letters": {
@@ -670,7 +824,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/letters/:id": {
+    "/api/letters/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -850,7 +1004,7 @@ export interface paths {
         };
         trace?: never;
     };
-    "/api/letters/:id/generate": {
+    "/api/letters/{id}/generate": {
         parameters: {
             query?: never;
             header?: never;
@@ -875,6 +1029,96 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description The generated letter */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Letter"];
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Letter does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Unknown block/variable reference in a section; nothing was written */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/letters/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get usage counts for a letter (blocks and variables it uses) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Usage counts for the letter */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LetterUsage"];
+                    };
+                };
                 /** @description Not authenticated */
                 401: {
                     headers: {
@@ -905,6 +1149,8 @@ export interface paths {
                 };
             };
         };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -950,6 +1196,66 @@ export interface components {
         BlockList: {
             blocks: components["schemas"]["Block"][];
         };
+        BlockUsage: {
+            /** @example abc123 */
+            blockId: string;
+            /** @example 2 */
+            letterCount: number;
+            letters: {
+                /** @example abc123 */
+                id: string;
+                /** @example Application at Acme */
+                name: string;
+            }[];
+            /** @example 1 */
+            variableCount: number;
+            variables: {
+                /** @example abc123 */
+                id: string;
+                /** @example greeting */
+                name: string;
+            }[];
+        };
+        VariableUsage: {
+            /** @example abc123 */
+            variableId: string;
+            /** @example 1 */
+            blockCount: number;
+            blocks: {
+                /** @example abc123 */
+                id: string;
+                /** @example greeting */
+                name: string;
+            }[];
+            /** @example 2 */
+            letterCount: number;
+            letters: {
+                /** @example abc123 */
+                id: string;
+                /** @example Application at Acme */
+                name: string;
+            }[];
+        };
+        LetterUsage: {
+            /** @example abc123 */
+            letterId: string;
+            /** @example 2 */
+            blockCount: number;
+            blocks: {
+                /** @example abc123 */
+                id: string;
+                /** @example greeting */
+                name: string;
+            }[];
+            /** @example 1 */
+            variableCount: number;
+            variables: {
+                /** @example abc123 */
+                id: string;
+                /** @example greeting */
+                name: string;
+            }[];
+        };
         Variable: {
             /** @example abc123 */
             id: string;
@@ -985,6 +1291,57 @@ export interface components {
         VariableList: {
             variables: components["schemas"]["Variable"][];
         };
+        LetterConfigSchema: {
+            /**
+             * @example Courier
+             * @enum {string}
+             */
+            font: "Courier" | "Helvetica" | "Times-Roman";
+            /** @example 16 */
+            fontSize: number;
+            /** @example #000000 */
+            fontColor: string;
+            /** @example #ffffff */
+            backgroundColor: string;
+            /** @example 1.5 */
+            lineHeight: number;
+            /**
+             * @example ltr
+             * @enum {string}
+             */
+            textDirection: "ltr" | "rtl";
+            /**
+             * @example A4
+             * @enum {string}
+             */
+            pageSize: "A4" | "LETTER";
+            /** @example 10 */
+            marginLeft: number;
+            /** @example 10 */
+            marginRight: number;
+            /** @example 10 */
+            marginTop: number;
+            /** @example 10 */
+            marginBottom: number;
+        };
+        LetterSectionSchema: {
+            /** @example blah blah blah */
+            text: string | null;
+            /**
+             * @default left
+             * @example left
+             * @enum {string}
+             */
+            align: "left" | "right" | "center" | "justify";
+        };
+        LetterGenerationSchema: {
+            config: components["schemas"]["LetterConfigSchema"];
+            sections: {
+                header: components["schemas"]["LetterSectionSchema"];
+                body: components["schemas"]["LetterSectionSchema"];
+                footer: components["schemas"]["LetterSectionSchema"];
+            };
+        };
         Letter: {
             /** @example abc123 */
             id: string;
@@ -1004,14 +1361,8 @@ export interface components {
             title: string;
             /** @example Cover letter for Acme */
             description?: string | null;
-            /** @example {} */
-            rawContent: {
-                [key: string]: unknown;
-            } | null;
-            /** @example {} */
-            generatedContent: {
-                [key: string]: unknown;
-            } | null;
+            rawContent: components["schemas"]["LetterGenerationSchema"];
+            generatedContent: components["schemas"]["LetterGenerationSchema"];
         };
         CreateLetterBody: {
             /** @example Application at Acme */
@@ -1024,86 +1375,24 @@ export interface components {
             title?: string;
             /** @example Cover letter for Acme */
             description?: string | null;
-            /** @example {} */
-            rawContent?: {
-                [key: string]: unknown;
-            } | null;
-            /** @example {} */
-            generatedContent?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        LetterGenerationSchema: {
-            config: {
-                /**
-                 * @example Courier
-                 * @enum {string}
-                 */
-                font: "Courier" | "Helvetica" | "Times-Roman";
-                /** @example 16 */
-                fontSize: number;
-                /** @example #000000 */
-                fontColor: string;
-                /** @example #ffffff */
-                backgroundColor: string;
-                /** @example 1.5 */
-                lineHeight: number;
-                /**
-                 * @example ltr
-                 * @enum {string}
-                 */
-                textDirection: "ltr" | "rtl";
-                /**
-                 * @example A4
-                 * @enum {string}
-                 */
-                pageSize: "A4" | "Letter";
-                /** @example 10 */
-                marginLeft: number;
-                /** @example 10 */
-                marginRight: number;
-                /** @example 10 */
-                marginTop: number;
-                /** @example 10 */
-                marginBottom: number;
-            };
-            sections: {
-                header: {
-                    /** @example address */
-                    text: string | null;
-                    /**
-                     * @default right
-                     * @example left
-                     * @enum {string}
-                     */
-                    layout: "left" | "right" | "center" | "full";
-                };
-                body: {
-                    /** @example main content */
-                    text: string | null;
-                    /**
-                     * @default left
-                     * @example left
-                     * @enum {string}
-                     */
-                    layout: "left" | "right" | "center" | "full";
-                };
-                footer: {
-                    /** @example signature and sign off */
-                    text: string | null;
-                    /**
-                     * @default left
-                     * @example left
-                     * @enum {string}
-                     */
-                    layout: "left" | "right" | "center" | "full";
-                };
-            };
+            rawContent?: components["schemas"]["LetterGenerationSchema"];
+            generatedContent?: components["schemas"]["LetterGenerationSchema"];
         };
         GenerateLetterBody: {
-            /** @example abc123 */
-            letterId: string;
-            letterGenerationContent: components["schemas"]["LetterGenerationSchema"];
+            config: components["schemas"]["LetterConfigSchema"];
+            sections: {
+                header: components["schemas"]["LetterSectionSchema"];
+                body: components["schemas"]["LetterSectionSchema"];
+                footer: components["schemas"]["LetterSectionSchema"];
+            };
+        };
+        PreviewLetterBody: {
+            config: components["schemas"]["LetterConfigSchema"];
+            sections: {
+                header: components["schemas"]["LetterSectionSchema"];
+                body: components["schemas"]["LetterSectionSchema"];
+                footer: components["schemas"]["LetterSectionSchema"];
+            };
         };
         LetterList: {
             letters: components["schemas"]["Letter"][];

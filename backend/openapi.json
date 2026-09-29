@@ -105,6 +105,204 @@
           "blocks"
         ]
       },
+      "BlockUsage": {
+        "type": "object",
+        "properties": {
+          "blockId": {
+            "type": "string",
+            "example": "abc123"
+          },
+          "letterCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 2
+          },
+          "letters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Application at Acme"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "variableCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "greeting"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "blockId",
+          "letterCount",
+          "letters",
+          "variableCount",
+          "variables"
+        ]
+      },
+      "VariableUsage": {
+        "type": "object",
+        "properties": {
+          "variableId": {
+            "type": "string",
+            "example": "abc123"
+          },
+          "blockCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "greeting"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "letterCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 2
+          },
+          "letters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "Application at Acme"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "variableId",
+          "blockCount",
+          "blocks",
+          "letterCount",
+          "letters"
+        ]
+      },
+      "LetterUsage": {
+        "type": "object",
+        "properties": {
+          "letterId": {
+            "type": "string",
+            "example": "abc123"
+          },
+          "blockCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 2
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "greeting"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "variableCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 1
+          },
+          "variables": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "example": "abc123"
+                },
+                "name": {
+                  "type": "string",
+                  "example": "greeting"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "letterId",
+          "blockCount",
+          "blocks",
+          "variableCount",
+          "variables"
+        ]
+      },
       "Variable": {
         "type": "object",
         "properties": {
@@ -236,7 +434,7 @@
             "type": "string",
             "enum": [
               "A4",
-              "Letter"
+              "LETTER"
             ],
             "example": "A4"
           },
@@ -275,6 +473,30 @@
           "marginBottom"
         ]
       },
+      "LetterSectionSchema": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "nullable": true,
+            "example": "blah blah blah"
+          },
+          "align": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right",
+              "center",
+              "justify"
+            ],
+            "default": "left",
+            "example": "left"
+          }
+        },
+        "required": [
+          "text"
+        ]
+      },
       "LetterGenerationSchema": {
         "type": "object",
         "properties": {
@@ -285,76 +507,13 @@
             "type": "object",
             "properties": {
               "header": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "address"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "right",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "body": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "main content"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "footer": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "signature and sign off"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               }
             },
             "required": [
@@ -457,11 +616,7 @@
           "generatedContent": {
             "$ref": "#/components/schemas/LetterGenerationSchema"
           }
-        },
-        "required": [
-          "rawContent",
-          "generatedContent"
-        ]
+        }
       },
       "GenerateLetterBody": {
         "type": "object",
@@ -473,76 +628,13 @@
             "type": "object",
             "properties": {
               "header": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "address"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "right",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "body": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "main content"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "footer": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "signature and sign off"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               }
             },
             "required": [
@@ -567,76 +659,13 @@
             "type": "object",
             "properties": {
               "header": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "address"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "right",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "body": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "main content"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               },
               "footer": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "nullable": true,
-                    "example": "signature and sign off"
-                  },
-                  "layout": {
-                    "type": "string",
-                    "enum": [
-                      "left",
-                      "right",
-                      "center",
-                      "full"
-                    ],
-                    "default": "left",
-                    "example": "left"
-                  }
-                },
-                "required": [
-                  "text"
-                ]
+                "$ref": "#/components/schemas/LetterSectionSchema"
               }
             },
             "required": [
@@ -936,7 +965,7 @@
         }
       }
     },
-    "/api/blocks/:id": {
+    "/api/blocks/{id}": {
       "delete": {
         "summary": "delete a block for the current user",
         "tags": [
@@ -956,6 +985,19 @@
             "required": true,
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "example": "true"
+            },
+            "required": false,
+            "name": "force",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1051,6 +1093,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Block is still referenced; usage is returned so the client can confirm",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockUsage"
+                }
+              }
+            }
           }
         }
       },
@@ -1135,6 +1187,105 @@
                   },
                   "required": [
                     "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Block does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocks/{id}/usage": {
+      "get": {
+        "summary": "Get usage counts for a block (letters using it, variables it uses)",
+        "tags": [
+          "blocks"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage counts for the block",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
                   ]
                 }
               }
@@ -1326,7 +1477,7 @@
         }
       }
     },
-    "/api/variables/:id": {
+    "/api/variables/{id}": {
       "delete": {
         "summary": "delete a variable for the current user",
         "tags": [
@@ -1346,6 +1497,19 @@
             "required": true,
             "name": "id",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "example": "true"
+            },
+            "required": false,
+            "name": "force",
+            "in": "query"
           }
         ],
         "responses": {
@@ -1441,6 +1605,16 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Variable is still referenced; usage is returned so the client can confirm",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableUsage"
+                }
+              }
+            }
           }
         }
       },
@@ -1525,6 +1699,105 @@
                   },
                   "required": [
                     "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "variable does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/variables/{id}/usage": {
+      "get": {
+        "summary": "Get usage counts for a variable (blocks and letters using it)",
+        "tags": [
+          "variables"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage counts for the variable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariableUsage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
                   ]
                 }
               }
@@ -1716,7 +1989,7 @@
         }
       }
     },
-    "/api/letters/:id": {
+    "/api/letters/{id}": {
       "delete": {
         "summary": "delete a letter for the current user",
         "tags": [
@@ -2065,7 +2338,7 @@
         }
       }
     },
-    "/api/letters/:id/generate": {
+    "/api/letters/{id}/generate": {
       "post": {
         "summary": "Generate letter content from pinned blocks/variables.",
         "tags": [
@@ -2097,6 +2370,160 @@
           }
         },
         "responses": {
+          "200": {
+            "description": "The generated letter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Letter"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Letter does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown block/variable reference in a section; nothing was written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/letters/{id}/usage": {
+      "get": {
+        "summary": "Get usage counts for a letter (blocks and variables it uses)",
+        "tags": [
+          "letters"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usage counts for the letter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LetterUsage"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Not authenticated",
             "content": {

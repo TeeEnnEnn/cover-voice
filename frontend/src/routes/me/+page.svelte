@@ -10,7 +10,6 @@
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
 
-
 	type Block = components['schemas']['Block'];
 	type Variable = components['schemas']['Variable'];
 	type Letter = components['schemas']['Letter'];
@@ -23,6 +22,8 @@
 	let variableError = $derived(data.variableError);
 	let letters = $derived(data.letters);
 	let letterError = $derived(data.letterError);
+	let blockUsages = $derived(data.blockUsages ?? {});
+	let variableUsages = $derived(data.variableUsages ?? {});
 
 	let selectedBlock: Block | null = $state(null);
 	let selectedVariable: Variable | null = $state(null);
@@ -82,6 +83,11 @@
 		<h2 class="text-4xl font-thin">{greeting}, <span class="">{user.name}</span></h2>
 		<small class="text-lg font-light text-gray-600">{second_greeting}</small>
 	</hgroup>
+	{#if form && !form.success && form.message}
+		<p class="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-red-600" role="alert">
+			{form.message}
+		</p>
+	{/if}
 
 	<div>
 		<div class="flex w-full flex-col gap-10 lg:flex-row">
@@ -113,7 +119,12 @@
 					{/if}
 					{#if creatingNewLetter}
 						<div transition:slide>
-							<form action="?/newLetter" method="post" class="flex flex-col gap-4 font-light" use:enhance>
+							<form
+								action="?/newLetter"
+								method="post"
+								class="flex flex-col gap-4 font-light"
+								use:enhance
+							>
 								<h4 class="text-xl">Add a new letter</h4>
 								<div>
 									<Label for="letterName" class="text-lg font-light">Title</Label>
@@ -143,6 +154,7 @@
 							}}
 							label="block"
 							kind="block"
+							usages={blockUsages}
 						/>
 					{/if}
 				</div>
@@ -150,7 +162,12 @@
 				<div class="mt-auto space-y-6">
 					{#if creatingNewBlock}
 						<div transition:slide>
-							<form action="?/newBlock" method="post" class="flex flex-col gap-4 font-light"use:enhance>
+							<form
+								action="?/newBlock"
+								method="post"
+								class="flex flex-col gap-4 font-light"
+								use:enhance
+							>
 								<h4 class="text-xl">Add a new block</h4>
 								<div>
 									<Label for="blockName" class="text-lg font-light">block name</Label>
@@ -184,6 +201,7 @@
 							}}
 							label="variable"
 							kind="variable"
+							usages={variableUsages}
 						/>
 					{/if}
 				</div>
@@ -191,7 +209,12 @@
 				<div class="mt-auto">
 					{#if creatingNewVariable}
 						<div transition:slide>
-							<form action="?/newVariable" method="post" class="flex flex-col gap-4 font-light"use:enhance>
+							<form
+								action="?/newVariable"
+								method="post"
+								class="flex flex-col gap-4 font-light"
+								use:enhance
+							>
 								<h4 class="text-xl">Add a new Variable</h4>
 								<div>
 									<Label for="variableName" class="text-lg font-light">Name</Label>

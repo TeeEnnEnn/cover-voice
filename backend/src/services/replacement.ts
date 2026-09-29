@@ -14,6 +14,23 @@ type SubstitutionPoint = {
 	captureEnd: number;
 };
 
+export type ReplacementEntityData = {
+	id: string;
+	value: string;
+};
+
+export type ReplacementResult = {
+	/** ids of blocks used */
+	blocksUsed: Array<string>;
+	/** ids of variables used */
+	variablesUsed: Array<string>;
+	replacedText: string;
+};
+
+export type ReplaceOutcome =
+	| { ok: true; value: ReplacementResult; error: null }
+	| { ok: false; value: null; error: ReplacementError };
+
 const BLOCK_START_1 = '{';
 const BLOCK_START_2 = '%';
 
@@ -31,6 +48,30 @@ const CONTEXT_WIDTH = 5;
 export type SubstitutionResult =
 	| { ok: true; points: Array<SubstitutionPoint>; error: null }
 	| { ok: false; points: null; error: ReplacementError };
+
+export type ExtractNamesOutcome =
+	| { ok: true; names: Array<string>; error: null }
+	| { ok: false; names: null; error: ReplacementError };
+
+/**
+ * Extracts the referenced entity names (`{% name %}` for blocks, `{{ name }}`
+ * for variables) from a text without resolving them. Used to reconcile
+ * junction tables: names that don't match a known entity are simply skipped
+ * by the caller, so dangling references never fail a save.
+ */
+export function extractReferenceNames(
+	text: string,
+	checkType: 'block' | 'variable'
+): ExtractNamesOutcome {
+	if (text.length === 0) return { ok: true, names: [], error: null };
+	const result = generateSubstitutionPoints(text, checkType);
+	if (!result.ok) return { ok: false, names: null, error: result.error };
+	const names = new Set<string>();
+	for (const sub of result.points) {
+		names.add(text.slice(sub.captureStart, sub.captureEnd).trim());
+	}
+	return { ok: true, names: Array.from(names), error: null };
+}
 
 function generateContextString(text: string, curr_pos: number) {
 	return text.slice(
@@ -110,73 +151,156 @@ function generateSubstitutionPoints(
 
 function replaceDelimitedText(
 	text: string,
-	entries: Map<string, string>,
+	entries: Map<string, ReplacementEntityData>,
 	checkType: 'block' | 'variable'
-): string | ReplacementError {
-	if (text.length === 0) return text;
+): ReplaceOutcome {
+	if (text.length === 0)
+		return {
+			ok: true,
+			value: { blocksUsed: [], variablesUsed: [], replacedText: '' },
+			error: null
+		};
 	const result = generateSubstitutionPoints(text, checkType);
 
 	if (!result.ok) {
-		return result.error;
+		return { ok: false, value: null, error: result.error };
 	}
+
+	const entitiesUsed: Set<string> = new Set();
 
 	let newString = '';
 	let lastInsertAt = 0;
-	for (let sub of result.points) {
+	for (const sub of result.points) {
 		const target = text.slice(sub.captureStart, sub.captureEnd).trim();
 		const replaced = entries.get(target);
 		if (replaced === undefined) {
 			return {
-				hint: `Could not find ${checkType} with name: '${target}'. Did you forget to create the ${checkType}?`,
-				type: checkType,
-				context: generateContextString(text, sub.captureStart)
+				ok: false,
+				value: null,
+				error: {
+					hint: `Could not find ${checkType} with name: '${target}'. Did you forget to create the ${checkType}?`,
+					type: checkType,
+					context: generateContextString(text, sub.captureStart)
+				}
 			};
 		}
-		newString += text.slice(lastInsertAt, sub.captureStart - 2) + replaced; // -2 for the two openings --- we do not include them in the final output
+		entitiesUsed.add(replaced.id);
+		newString += text.slice(lastInsertAt, sub.captureStart - 2) + replaced.value; // -2 for the two openings --- we do not include them in the final output
 		lastInsertAt = sub.captureEnd + 2; // +2 for the two closing --- we do not include them in the final output
 	}
 
-	return newString + text.slice(lastInsertAt);
+	const replacedText = newString + text.slice(lastInsertAt);
+	return checkType === 'block'
+		? {
+				ok: true,
+				value: { blocksUsed: Array.from(entitiesUsed.values()), variablesUsed: [], replacedText },
+				error: null
+			}
+		: {
+				ok: true,
+				value: { variablesUsed: Array.from(entitiesUsed.values()), blocksUsed: [], replacedText },
+				error: null
+			};
 }
 
 /**
  * Replaces blocks in the text with their corresponding values from the database.
  *
  * @param text The text to replace blocks in.
- * @param blocks The blocks that can be used in replacements.
- * @returns The text with blocks replaced, or a `ReplacementError` if an error occurred.
+ * @param blocks Map of block name to its id and value.
+ * @returns Discriminated outcome with used block ids and replaced text, or a `ReplacementError`.
  */
 export function replaceBlocks(
 	text: string,
-	blocks: Map<string, string>
-): string | ReplacementError {
+	blocks: Map<string, ReplacementEntityData>
+): ReplaceOutcome {
 	return replaceDelimitedText(text, blocks, 'block');
 }
 
 export function replaceVariables(
 	text: string,
-	variables: Map<string, string>
-): string | ReplacementError {
+	variables: Map<string, ReplacementEntityData>
+): ReplaceOutcome {
 	return replaceDelimitedText(text, variables, 'variable');
 }
 
-export function replaceText(
-	text: string,
-	blocks: Block[],
-	variables: Variable[]
-): string | ReplacementError {
-	const blockMap = new Map<string, string>();
-	const variableMap = new Map<string, string>();
+export function replaceText(text: string, blocks: Block[], variables: Variable[]): ReplaceOutcome {
+	/** entity_name: { entity_id, entity_value } */
+	const blockMap = new Map<string, ReplacementEntityData>();
+	/** entity_name: { entity_id, entity_value } */
+	const variableMap = new Map<string, ReplacementEntityData>();
 
-	for (let block of blocks) {
-		blockMap.set(block.name, block.value);
+	for (const block of blocks) {
+		blockMap.set(block.name, { id: block.id, value: block.value });
 	}
 
-	for (let variable of variables) {
-		variableMap.set(variable.name, variable.value);
+	for (const variable of variables) {
+		variableMap.set(variable.name, { id: variable.id, value: variable.value });
 	}
 
 	const blocksReplaced = replaceBlocks(text, blockMap);
-	if (typeof blocksReplaced === 'object') return blocksReplaced;
-	return replaceVariables(blocksReplaced, variableMap);
+	if (!blocksReplaced.ok) return blocksReplaced;
+	const variablesReplaced = replaceVariables(blocksReplaced.value.replacedText, variableMap);
+	if (!variablesReplaced.ok) return variablesReplaced;
+	return {
+		ok: true,
+		value: {
+			blocksUsed: blocksReplaced.value.blocksUsed,
+			variablesUsed: variablesReplaced.value.variablesUsed,
+			replacedText: variablesReplaced.value.replacedText
+		},
+		error: null
+	};
+}
+
+export const LETTER_SECTION_KEYS = ['header', 'body', 'footer'] as const;
+export type LetterSectionKey = (typeof LETTER_SECTION_KEYS)[number];
+
+export type LetterSectionTexts = Record<LetterSectionKey, string | null>;
+
+export type CollectLetterRefsError = ReplacementError & { section: LetterSectionKey };
+
+export type CollectLetterRefsOutcome =
+	| {
+			ok: true;
+			value: {
+				blockIds: Array<string>;
+				variableIds: Array<string>;
+				replacedText: LetterSectionTexts;
+			};
+			error: null;
+	  }
+	| { ok: false; value: null; error: CollectLetterRefsError };
+
+/**
+ * Runs {@link replaceText} over each letter section and unions the used ids.
+ * Fails fast with the offending section name on the first reference error —
+ * callers that must abort on bad refs (letter generation) use this directly,
+ * while best-effort callers fall back to zero rows.
+ */
+export function collectLetterRefs(
+	sections: Record<LetterSectionKey, { text: string | null }>,
+	blocks: Block[],
+	variables: Variable[]
+): CollectLetterRefsOutcome {
+	const blockIds = new Set<string>();
+	const variableIds = new Set<string>();
+	const replacedText = {} as LetterSectionTexts;
+	for (const key of LETTER_SECTION_KEYS) {
+		const text = sections[key].text;
+		if (text === null) {
+			replacedText[key] = null;
+			continue;
+		}
+		const outcome = replaceText(text, blocks, variables);
+		if (!outcome.ok) return { ok: false, value: null, error: { ...outcome.error, section: key } };
+		for (const id of outcome.value.blocksUsed) blockIds.add(id);
+		for (const id of outcome.value.variablesUsed) variableIds.add(id);
+		replacedText[key] = outcome.value.replacedText;
+	}
+	return {
+		ok: true,
+		value: { blockIds: Array.from(blockIds), variableIds: Array.from(variableIds), replacedText },
+		error: null
+	};
 }

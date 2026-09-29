@@ -4,12 +4,14 @@ import { requireAuth } from '../middleware/require-auth.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
 import { createVariable, deleteVariable, getVariables, updateVariable } from '../crud/variable.js';
+import { getVariableUsage } from '../crud/usage.js';
 import {
 	variableSchema,
 	variableListSchema,
 	createVariableSchema,
 	updateVariableSchema
 } from '../schemas/variables.js';
+import { forceQuerySchema, variableUsageSchema } from '../schemas/usage.js';
 import { validationErrorSchema } from '../schemas/common.js';
 import { registry } from '../openapi/registry.js';
 
@@ -60,12 +62,13 @@ registry.registerPath({
 
 registry.registerPath({
 	method: 'delete',
-	path: '/api/variables/:id',
+	path: '/api/variables/{id}',
 	summary: 'delete a variable for the current user',
 	tags: ['variables'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		query: forceQuerySchema
 	},
 	responses: {
 		204: {
@@ -78,13 +81,42 @@ registry.registerPath({
 		400: {
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Variable is still referenced; usage is returned so the client can confirm',
+			content: { 'application/json': { schema: variableUsageSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'get',
+	path: '/api/variables/{id}/usage',
+	summary: 'Get usage counts for a variable (blocks and letters using it)',
+	tags: ['variables'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'Usage counts for the variable',
+			content: { 'application/json': { schema: variableUsageSchema } }
+		},
+		404: {
+			description: 'variable does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
 		}
 	}
 });
 
 registry.registerPath({
 	method: 'patch',
-	path: '/api/variables/:id',
+	path: '/api/variables/{id}',
 	summary: 'Update a variable for the current user.',
 	tags: ['variables'],
 	security: [{ cookieAuth: [] }],
@@ -129,16 +161,44 @@ router.post(
 	}
 );
 
-router.delete('/variables/:id', requireAuth, async (req, res) => {
+router.get('/variables/:id/usage', requireAuth, async (req, res) => {
 	const userId = res.locals.user!.id;
 	const variableId = req.params.id as string;
-	const updated = await deleteVariable(userId, variableId);
-	if (!updated) {
+	const usage = await getVariableUsage(userId, variableId);
+	if (!usage) {
 		res.status(404).json({ error: { message: 'variable not found', details: [] } });
 		return;
 	}
-	res.status(204).send();
+	res.json(usage);
 });
+
+router.delete(
+	'/variables/:id',
+	requireAuth,
+	validate({ query: forceQuerySchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const variableId = req.params.id as string;
+		const force = req.query.force === 'true';
+		if (!force) {
+			const usage = await getVariableUsage(userId, variableId);
+			if (!usage) {
+				res.status(404).json({ error: { message: 'variable not found', details: [] } });
+				return;
+			}
+			if (usage.blockCount > 0 || usage.letterCount > 0) {
+				res.status(409).json(usage);
+				return;
+			}
+		}
+		const updated = await deleteVariable(userId, variableId);
+		if (!updated) {
+			res.status(404).json({ error: { message: 'variable not found', details: [] } });
+			return;
+		}
+		res.status(204).send();
+	}
+);
 
 router.patch(
 	'/variables/:id',

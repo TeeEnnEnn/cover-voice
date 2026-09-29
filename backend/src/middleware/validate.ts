@@ -12,7 +12,17 @@ export function validate(schemas: ValidationSchemas) {
 	return (req: Request, res: Response, next: NextFunction) => {
 		try {
 			if (schemas.params) req.params = schemas.params.parse(req.params) as Request['params'];
-			if (schemas.query) req.query = schemas.query.parse(req.query) as Request['query'];
+			if (schemas.query) {
+				const parsed = schemas.query.parse(req.query);
+				// Express 5 exposes req.query as a prototype getter, so a plain
+				// assignment throws. Shadow it with an own property instead.
+				Object.defineProperty(req, 'query', {
+					value: parsed,
+					writable: true,
+					enumerable: true,
+					configurable: true
+				});
+			}
 			if (schemas.body) req.body = schemas.body.parse(req.body) as Request['body'];
 			next();
 		} catch (error) {

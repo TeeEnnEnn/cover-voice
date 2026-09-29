@@ -1,5 +1,14 @@
 import { relations, sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, boolean, index, jsonb, unique } from 'drizzle-orm/pg-core';
+import {
+	pgTable,
+	text,
+	timestamp,
+	boolean,
+	index,
+	jsonb,
+	unique,
+	primaryKey
+} from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
 	id: text('id').primaryKey(),
@@ -137,6 +146,73 @@ export const letterTable = pgTable(
 	(table) => [unique().on(table.userId, table.title), index('letter_userId_idx').on(table.userId)]
 );
 
+// Tracks which variables are referenced by a block's value (`{{name}}`).
+export const blockVariableTable = pgTable(
+	'block_variable',
+	{
+		blockId: text('block_id')
+			.notNull()
+			.references(() => blockTable.id, { onDelete: 'cascade' }),
+		variableId: text('variable_id')
+			.notNull()
+			.references(() => variableTable.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.blockId, table.variableId] }),
+		index('block_variable_block_idx').on(table.blockId),
+		index('block_variable_variable_idx').on(table.variableId),
+		index('block_variable_user_idx').on(table.userId)
+	]
+);
+
+// Tracks which blocks are referenced by a letter's sections
+export const letterBlockTable = pgTable(
+	'letter_block',
+	{
+		letterId: text('letter_id')
+			.notNull()
+			.references(() => letterTable.id, { onDelete: 'cascade' }),
+		blockId: text('block_id')
+			.notNull()
+			.references(() => blockTable.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.letterId, table.blockId] }),
+		index('letter_block_letter_idx').on(table.letterId),
+		index('letter_block_block_idx').on(table.blockId),
+		index('letter_block_user_idx').on(table.userId)
+	]
+);
+
+// Tracks which variables are referenced by a letter's sections,
+// including variables pulled in via block expansion.
+export const letterVariableTable = pgTable(
+	'letter_variable',
+	{
+		letterId: text('letter_id')
+			.notNull()
+			.references(() => letterTable.id, { onDelete: 'cascade' }),
+		variableId: text('variable_id')
+			.notNull()
+			.references(() => variableTable.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.letterId, table.variableId] }),
+		index('letter_variable_letter_idx').on(table.letterId),
+		index('letter_variable_variable_idx').on(table.variableId),
+		index('letter_variable_user_idx').on(table.userId)
+	]
+);
+
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
 	accounts: many(account),
@@ -155,6 +231,51 @@ export const sessionRelations = relations(session, ({ one }) => ({
 export const accountRelations = relations(account, ({ one }) => ({
 	user: one(user, {
 		fields: [account.userId],
+		references: [user.id]
+	})
+}));
+
+export const blockVariableRelations = relations(blockVariableTable, ({ one }) => ({
+	block: one(blockTable, {
+		fields: [blockVariableTable.blockId],
+		references: [blockTable.id]
+	}),
+	variable: one(variableTable, {
+		fields: [blockVariableTable.variableId],
+		references: [variableTable.id]
+	}),
+	user: one(user, {
+		fields: [blockVariableTable.userId],
+		references: [user.id]
+	})
+}));
+
+export const letterBlockRelations = relations(letterBlockTable, ({ one }) => ({
+	letter: one(letterTable, {
+		fields: [letterBlockTable.letterId],
+		references: [letterTable.id]
+	}),
+	block: one(blockTable, {
+		fields: [letterBlockTable.blockId],
+		references: [blockTable.id]
+	}),
+	user: one(user, {
+		fields: [letterBlockTable.userId],
+		references: [user.id]
+	})
+}));
+
+export const letterVariableRelations = relations(letterVariableTable, ({ one }) => ({
+	letter: one(letterTable, {
+		fields: [letterVariableTable.letterId],
+		references: [letterTable.id]
+	}),
+	variable: one(variableTable, {
+		fields: [letterVariableTable.variableId],
+		references: [variableTable.id]
+	}),
+	user: one(user, {
+		fields: [letterVariableTable.userId],
 		references: [user.id]
 	})
 }));

@@ -2,6 +2,13 @@ import { db } from '../db/index.js';
 import { blockTable, letterTable, variableTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateLetterInput, LetterGeneration } from '../schemas/letters.js';
+import { collectLetterRefs } from '../services/replacement.js';
+import type { CollectLetterRefsError } from '../services/replacement.js';
+import {
+	syncLetterFromSections,
+	syncLetterLinks,
+	toLetterSections
+} from '../services/usage-sync.js';
 
 export async function getLetters(userId: string) {
 	const rows = await db
@@ -36,17 +43,33 @@ export async function updateLetter(
 		generatedContent: unknown;
 	}>
 ) {
-	const result = await db
-		.update(letterTable)
-		.set({
-			title: data.title,
-			description: data.description,
-			rawContent: data.rawContent,
-			generatedContent: data.generatedContent
-		})
-		.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
-		.returning();
-	return result.length === 0 ? null : result[0];
+	return db.transaction(async (tx) => {
+		const updated = (
+			await tx
+				.update(letterTable)
+				.set({
+					title: data.title,
+					description: data.description,
+					rawContent: data.rawContent,
+					generatedContent: data.generatedContent
+				})
+				.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
+				.returning()
+		)[0];
+		if (!updated || data.rawContent === undefined) return updated ?? null;
+		// Best-effort: unparseable content yields zero links, but the save succeeds.
+		const sections = toLetterSections(data.rawContent);
+		if (sections === null) {
+			await syncLetterLinks(tx, userId, id, [], []);
+			return updated;
+		}
+		const [blocks, variables] = await Promise.all([
+			tx.select().from(blockTable).where(eq(blockTable.userId, userId)),
+			tx.select().from(variableTable).where(eq(variableTable.userId, userId))
+		]);
+		await syncLetterFromSections(tx, userId, id, sections, blocks, variables);
+		return updated;
+	});
 }
 
 export async function deleteLetter(userId: string, id: string) {
@@ -66,11 +89,21 @@ export async function getLetterById(userId: string, id: string) {
 	return result.length === 0 ? null : result[0];
 }
 
+export type GenerateLetterResult =
+	| { ok: true; letter: typeof letterTable.$inferSelect; error: null }
+	| { ok: false; letter: null; error: CollectLetterRefsError };
+
+/**
+ * Renders a letter's sections and reconciles its junction rows. Returns null
+ * when the letter doesn't exist. On a reference error nothing is written —
+ * neither content nor junction rows — so the tables keep reflecting the last
+ * successful generation.
+ */
 export async function generateLetter(
 	userId: string,
 	letterId: string,
 	letterGenerationContent: LetterGeneration
-) {
+): Promise<GenerateLetterResult | null> {
 	const letter = await db
 		.select()
 		.from(letterTable)
@@ -80,14 +113,54 @@ export async function generateLetter(
 		return null;
 	}
 
-  const blocks = await db.select().from(blockTable).where(eq(blockTable.userId, userId));
-  const variables = await db.select().from(variableTable).where(eq(variableTable.userId, userId));
+	const [blocks, variables] = await Promise.all([
+		db.select().from(blockTable).where(eq(blockTable.userId, userId)),
+		db.select().from(variableTable).where(eq(variableTable.userId, userId))
+	]);
 
-  // remove all existing links for blocks and variables
-  // for block<->variable in  block<->variable[]: delete block<->variable
-  // for block<->letter in block<->letter[]: delete block<->letter
-  // for variable<->letter in variable<->letter[]: delete variable<->letter
+	const collected = collectLetterRefs(letterGenerationContent.sections, blocks, variables);
+	if (!collected.ok) {
+		return { ok: false, letter: null, error: collected.error };
+	}
 
+	return db.transaction(async (tx) => {
+		// Delete-all existing links first, then insert the fresh set, so the
+		// junction tables always reflect the true usage of this generation.
+		await syncLetterLinks(
+			tx,
+			userId,
+			letterId,
+			collected.value.blockIds,
+			collected.value.variableIds
+		);
 
-	void letterGenerationContent;
+		const generatedContent: LetterGeneration = {
+			config: letterGenerationContent.config,
+			sections: {
+				header: {
+					text: collected.value.replacedText.header,
+					align: letterGenerationContent.sections.header.align
+				},
+				body: {
+					text: collected.value.replacedText.body,
+					align: letterGenerationContent.sections.body.align
+				},
+				footer: {
+					text: collected.value.replacedText.footer,
+					align: letterGenerationContent.sections.footer.align
+				}
+			}
+		};
+
+		const updated = await tx
+			.update(letterTable)
+			.set({
+				rawContent: letterGenerationContent,
+				generatedContent
+			})
+			.where(and(eq(letterTable.userId, userId), eq(letterTable.id, letterId)))
+			.returning();
+		if (updated.length === 0) return null;
+		return { ok: true, letter: updated[0], error: null };
+	});
 }

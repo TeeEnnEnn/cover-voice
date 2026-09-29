@@ -1,7 +1,14 @@
 import { expect, test } from '@playwright/test';
 
-test('home page reports backend and database health', async ({ page }) => {
+test('backend reports healthy with database reachable', async ({ request }) => {
+	const res = await request.get('/api/health');
+	expect(res.ok()).toBeTruthy();
+	const body = await res.json();
+	expect(body.status).toBe('ok');
+	expect(body.db).toBe('ok');
+});
+
+test('landing page renders', async ({ page }) => {
 	await page.goto('/');
-	await page.getByRole('button', { name: 'Ping backend' }).click();
-	await expect(page.getByText('API: ok · DB: ok')).toBeVisible({ timeout: 10_000 });
+	await expect(page.getByRole('heading', { name: /Cover letters streamlined/ })).toBeVisible();
 });

@@ -24,13 +24,16 @@ export const letterConfigSchema = registry.register(
 	})
 );
 
-export const letterSectionSchema = registry.register("LetterSectionSchema", z.object({
-				text: z.string().openapi({ example: 'blah blah blah' }).nullable(),
-				align: z
-					.enum(['left', 'right', 'center', 'justify'])
-					.openapi({ example: 'left' })
-					.default('left')
-			}))
+export const letterSectionSchema = registry.register(
+	'LetterSectionSchema',
+	z.object({
+		text: z.string().openapi({ example: 'blah blah blah' }).nullable(),
+		align: z
+			.enum(['left', 'right', 'center', 'justify'])
+			.openapi({ example: 'left' })
+			.default('left')
+	})
+);
 
 export const letterGenerationSchema = registry.register(
 	'LetterGenerationSchema',
@@ -39,7 +42,7 @@ export const letterGenerationSchema = registry.register(
 		sections: z.object({
 			header: letterSectionSchema,
 			body: letterSectionSchema,
-			footer: letterSectionSchema,
+			footer: letterSectionSchema
 		})
 	})
 );
@@ -71,8 +74,8 @@ export const updateLetterSchema = registry.register(
 	z.object({
 		title: z.string().min(1).max(50).optional().openapi({ example: 'Application at Acme' }),
 		description: z.string().nullable().optional().openapi({ example: 'Cover letter for Acme' }),
-		rawContent: letterGenerationSchema,
-		generatedContent: letterGenerationSchema
+		rawContent: letterGenerationSchema.optional(),
+		generatedContent: letterGenerationSchema.optional()
 	})
 );
 
@@ -88,7 +91,7 @@ export const letterListSchema = registry.register(
 );
 
 export type LetterConfig = z.infer<typeof letterConfigSchema>;
-export type LetterSection = z.infer<typeof letterSectionSchema>
+export type LetterSection = z.infer<typeof letterSectionSchema>;
 export type LetterGeneration = z.infer<typeof letterGenerationSchema>;
 export type Letter = z.infer<typeof letterSchema>;
 export type CreateLetterInput = z.infer<typeof createLetterSchema>;

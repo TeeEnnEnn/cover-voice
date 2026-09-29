@@ -2,6 +2,18 @@
 	import { Input } from '@/components/ui/input/index.js';
 	import { Label } from '@/components/ui/label/index.js';
 	import Button from './ui/button/button.svelte';
+	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
+
+	type NamedRef = { id: string; name: string };
+
+	export type ItemUsage = {
+		letters: NamedRef[];
+		letterCount: number;
+		variables?: NamedRef[];
+		variableCount?: number;
+		blocks?: NamedRef[];
+		blockCount?: number;
+	};
 
 	let {
 		id,
@@ -10,7 +22,8 @@
 		userId,
 		createdAt,
 		updatedAt,
-		kind = 'block'
+		kind = 'block',
+		usage = null
 	}: {
 		id: string;
 		name: string;
@@ -19,15 +32,54 @@
 		createdAt: string;
 		updatedAt: string;
 		kind?: 'block' | 'variable';
+		usage?: ItemUsage | null;
 	} = $props();
 
 	let isEditing = $state(false);
+	let confirmingDelete = $state(false);
 
 	let updateAction = $derived(kind === 'block' ? '?/updateBlock' : '?/updateVariable');
 	let deleteAction = $derived(kind === 'block' ? '?/deleteBlock' : '?/deleteVariable');
 	let nameField = $derived(kind === 'block' ? 'blockName' : 'variableName');
 	let valueField = $derived(kind === 'block' ? 'blockValue' : 'variableValue');
 	let idField = $derived(kind === 'block' ? 'blockId' : 'variableId');
+
+	function refNames(refs: NamedRef[] | undefined): string {
+		if (!refs || refs.length === 0) return '';
+		return refs.map((ref) => `"${ref.name}"`).join(', ');
+	}
+
+	let usageSubtitle = $derived.by(() => {
+		if (!usage) return null;
+		if (kind === 'block') {
+			const parts: string[] = [];
+			if (usage.letterCount > 0) parts.push(`Used in ${usage.letterCount} letter(s)`);
+			if ((usage.variableCount ?? 0) > 0) parts.push(`Uses ${usage.variableCount} variable(s)`);
+			return parts.length > 0 ? parts.join(' · ') : 'Not used anywhere';
+		}
+		const parts: string[] = [];
+		if ((usage.blockCount ?? 0) > 0) parts.push(`Used in ${usage.blockCount} block(s)`);
+		if (usage.letterCount > 0) parts.push(`Used in ${usage.letterCount} letter(s)`);
+		return parts.length > 0 ? parts.join(' · ') : 'Not used anywhere';
+	});
+
+	let dialogLines = $derived.by(() => {
+		if (!usage) return [];
+		const lines: string[] = [];
+		if (kind === 'block') {
+			if (usage.letterCount > 0)
+				lines.push(`Used in ${usage.letterCount} letter(s): ${refNames(usage.letters)}`);
+			if ((usage.variableCount ?? 0) > 0)
+				lines.push(`Uses ${usage.variableCount} variable(s): ${refNames(usage.variables)}`);
+		} else {
+			if ((usage.blockCount ?? 0) > 0)
+				lines.push(`Used in ${usage.blockCount} block(s): ${refNames(usage.blocks)}`);
+			if (usage.letterCount > 0)
+				lines.push(`Used in ${usage.letterCount} letter(s): ${refNames(usage.letters)}`);
+		}
+		if (lines.length === 0) lines.push('Nothing references it.');
+		return lines;
+	});
 </script>
 
 <div class="rounded-lg border border-gray-300 p-4">
@@ -49,6 +101,9 @@
 			{/if}
 		</div>
 		<input type="hidden" value={id} name={idField} />
+		{#if usageSubtitle}
+			<small class="text-muted-foreground">{usageSubtitle}</small>
+		{/if}
 		<div class="flex flex-col gap-1 text-muted-foreground">
 			<small>created: {Intl.DateTimeFormat('en-GB').format(new Date(createdAt))}</small>
 			<small>updated: {Intl.DateTimeFormat('en-GB').format(new Date(updatedAt))}</small>
@@ -64,7 +119,14 @@
 					}}>Cancel</Button
 				>
 				<Input class="flex-3" type="submit" value="Update" />
-				<Button class="flex-1" variant="destructive" type="submit" formaction={deleteAction}
+				<Button
+					class="flex-1"
+					variant="destructive"
+					type="button"
+					aria-label="Delete {kind}"
+					onclick={() => {
+						confirmingDelete = true;
+					}}
 					><svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="24"
@@ -92,4 +154,15 @@
 			{/if}
 		</div>
 	</form>
+	<DeleteConfirmDialog
+		open={confirmingDelete}
+		heading={`Delete ${kind} "${name}"?`}
+		lines={dialogLines}
+		{deleteAction}
+		{idField}
+		idValue={id}
+		onCancel={() => {
+			confirmingDelete = false;
+		}}
+	/>
 </div>

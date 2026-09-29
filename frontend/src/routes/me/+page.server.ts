@@ -2,11 +2,13 @@ import type { PageServerLoad, Actions } from './$types';
 import { requireUser } from '$lib/server/auth';
 import { createApiClient } from '@/api/client';
 import { fail } from '@sveltejs/kit';
-	import type { components } from '@/api/schema.js';
+import type { components } from '@/api/schema.js';
 
 type Block = components['schemas']['Block'];
-	type Variable = components['schemas']['Variable'];
-	type Letter = components['schemas']['Letter'];
+type Variable = components['schemas']['Variable'];
+type Letter = components['schemas']['Letter'];
+type BlockUsage = components['schemas']['BlockUsage'];
+type VariableUsage = components['schemas']['VariableUsage'];
 
 export const load: PageServerLoad = async ({ fetch, request }) => {
 	const cookie = request.headers.get('cookie');
@@ -23,6 +25,23 @@ export const load: PageServerLoad = async ({ fetch, request }) => {
 	const { data: variableData, error: variableError } = variableResult;
 	const { data: letterData, error: letterError } = letterResult;
 
+	const blockUsages: Record<string, BlockUsage> = {};
+	const variableUsages: Record<string, VariableUsage> = {};
+	await Promise.all([
+		...(blockData?.blocks ?? []).map(async (block) => {
+			const { data } = await api.GET('/api/blocks/{id}/usage', {
+				params: { path: { id: block.id } }
+			});
+			if (data) blockUsages[block.id] = data;
+		}),
+		...(variableData?.variables ?? []).map(async (variable) => {
+			const { data } = await api.GET('/api/variables/{id}/usage', {
+				params: { path: { id: variable.id } }
+			});
+			if (data) variableUsages[variable.id] = data;
+		})
+	]);
+
 	return {
 		user: user,
 		blocks: blockData,
@@ -30,7 +49,9 @@ export const load: PageServerLoad = async ({ fetch, request }) => {
 		variables: variableData,
 		variableError: variableError,
 		letters: letterData,
-		letterError: letterError
+		letterError: letterError,
+		blockUsages,
+		variableUsages
 	};
 };
 
@@ -61,7 +82,12 @@ export const actions = {
 			return fail(400, { action: 'newLetter', message: 'Failed to create letter.' });
 		}
 
-		return { action: 'newLetter' as const, success: true, letter: letterData as Letter, message: '' };
+		return {
+			action: 'newLetter' as const,
+			success: true,
+			letter: letterData as Letter,
+			message: ''
+		};
 	},
 	newBlock: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
@@ -109,7 +135,12 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'newVariable', message: 'Failed to create variable.' });
 		}
-		return { action: 'newVariable' as const, success: true, newVariable: data as Variable, message: '' };
+		return {
+			action: 'newVariable' as const,
+			success: true,
+			newVariable: data as Variable,
+			message: ''
+		};
 	},
 	updateVariable: async ({ request, fetch }) => {
 		const cookie = request.headers.get('cookie');
@@ -131,7 +162,7 @@ export const actions = {
 		}
 
 		const api = createApiClient(fetch, cookie);
-		const { data, error: err } = await api.PATCH('/api/variables/:id', {
+		const { data, error: err } = await api.PATCH('/api/variables/{id}', {
 			params: {
 				path: { id: variableId }
 			},
@@ -156,14 +187,24 @@ export const actions = {
 			return fail(400, { action: 'deleteVariable', message: 'Variable id is required.' });
 		}
 
+		const force = formData.get('force')?.toString() === 'true';
 		const api = createApiClient(fetch, cookie);
-		const { data, error: err } = await api.DELETE('/api/variables/:id', {
+		const { data, error: err } = await api.DELETE('/api/variables/{id}', {
 			params: {
 				path: { id: variableId }
-			}
+			},
+			query: force ? { force: 'true' as const } : {}
 		});
 
 		if (err) {
+			if (typeof err === 'object' && err !== null && 'variableId' in err) {
+				const usage = err as VariableUsage;
+				return fail(409, {
+					action: 'deleteVariable',
+					message: `Variable is used in ${usage.blockCount} block(s) and ${usage.letterCount} letter(s). Confirm to delete anyway.`,
+					usage
+				});
+			}
 			return fail(400, { action: 'deleteVariable', message: 'Failed to delete variable.' });
 		}
 		return { success: true, deleteVariable: data, message: '' };
@@ -185,7 +226,7 @@ export const actions = {
 		}
 
 		const api = createApiClient(fetch, cookie);
-		const { data, error: err } = await api.PATCH('/api/blocks/:id', {
+		const { data, error: err } = await api.PATCH('/api/blocks/{id}', {
 			params: {
 				path: { id: blockId }
 			},
@@ -210,14 +251,24 @@ export const actions = {
 			return fail(400, { action: 'deleteBlock', message: 'Block id is required.' });
 		}
 
+		const force = formData.get('force')?.toString() === 'true';
 		const api = createApiClient(fetch, cookie);
-		const { error: err } = await api.DELETE('/api/blocks/:id', {
+		const { error: err } = await api.DELETE('/api/blocks/{id}', {
 			params: {
 				path: { id: blockId }
-			}
+			},
+			query: force ? { force: 'true' as const } : {}
 		});
 
 		if (err) {
+			if (typeof err === 'object' && err !== null && 'blockId' in err) {
+				const usage = err as BlockUsage;
+				return fail(409, {
+					action: 'deleteBlock',
+					message: `Block is used in ${usage.letterCount} letter(s) and uses ${usage.variableCount} variable(s). Confirm to delete anyway.`,
+					usage
+				});
+			}
 			return fail(400, { action: 'deleteBlock', message: 'Failed to delete block.' });
 		}
 		return { action: 'deleteBlock' as const, success: true, message: '' };
@@ -239,7 +290,7 @@ export const actions = {
 		}
 
 		const api = createApiClient(fetch, cookie);
-		const { data, error: err } = await api.PATCH('/api/letters/:id', {
+		const { data, error: err } = await api.PATCH('/api/letters/{id}', {
 			params: {
 				path: { id: letterId }
 			},
@@ -265,7 +316,7 @@ export const actions = {
 		}
 
 		const api = createApiClient(fetch, cookie);
-		const { error: err } = await api.DELETE('/api/letters/:id', {
+		const { error: err } = await api.DELETE('/api/letters/{id}', {
 			params: {
 				path: { id: letterId }
 			}
