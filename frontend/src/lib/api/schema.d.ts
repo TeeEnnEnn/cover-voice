@@ -99,7 +99,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -123,7 +129,10 @@ export interface paths {
         /** List the current user's blocks */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    limit?: number;
+                    offset?: number | null;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -146,7 +155,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -200,7 +215,30 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Block name already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -349,6 +387,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Block name already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
         };
         trace?: never;
@@ -388,7 +443,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -429,7 +490,10 @@ export interface paths {
         /** List the current user's variables */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    limit?: number;
+                    offset?: number | null;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -452,7 +516,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -506,7 +576,30 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Variable name already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -655,6 +748,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Variable name already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
         };
         trace?: never;
@@ -694,7 +804,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -735,7 +851,10 @@ export interface paths {
         /** List the current user's letters */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    limit?: number;
+                    offset?: number | null;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -758,7 +877,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -812,7 +937,30 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Letter title already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -859,7 +1007,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -1000,6 +1154,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Letter title already exists */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
         };
         trace?: never;
@@ -1045,7 +1216,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -1126,7 +1303,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };
@@ -1192,7 +1375,13 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            message: string;
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
                         };
                     };
                 };

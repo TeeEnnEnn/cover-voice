@@ -9,13 +9,16 @@ import {
 	syncLetterLinks,
 	toLetterSections
 } from '../services/usage-sync.js';
+import { stripUndefined } from './helpers.js';
 
-export async function getLetters(userId: string) {
+export async function getLetters(userId: string, pagination?: { limit: number; offset: number }) {
 	const rows = await db
 		.select()
 		.from(letterTable)
 		.where(eq(letterTable.userId, userId))
-		.orderBy(desc(letterTable.updatedAt));
+		.orderBy(desc(letterTable.updatedAt))
+		.limit(pagination?.limit ?? 100)
+		.offset(pagination?.offset ?? 0);
 	return {
 		letters: rows
 	};
@@ -47,12 +50,14 @@ export async function updateLetter(
 		const updated = (
 			await tx
 				.update(letterTable)
-				.set({
-					title: data.title,
-					description: data.description,
-					rawContent: data.rawContent,
-					generatedContent: data.generatedContent
-				})
+				.set(
+					stripUndefined({
+						title: data.title,
+						description: data.description,
+						rawContent: data.rawContent,
+						generatedContent: data.generatedContent
+					})
+				)
 				.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
 				.returning()
 		)[0];

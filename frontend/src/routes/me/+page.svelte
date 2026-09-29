@@ -95,7 +95,7 @@
 				<h3 class="text-2xl font-thin">Letters</h3>
 				<div>
 					{#if letterError}
-						<p class="text-lg font-medium text-red-400">{letterError.message}</p>
+						<p class="text-lg font-medium text-red-400">{letterError.error.message}</p>
 					{:else}
 						<LetterSearch
 							letters={letterItems}
@@ -144,7 +144,7 @@
 				<h3 class="text-2xl font-thin">Blocks</h3>
 				<div>
 					{#if blockError}
-						<p class="text-lg font-medium text-red-400">{blockError.message}</p>
+						<p class="text-lg font-medium text-red-400">{blockError.error.message}</p>
 					{:else}
 						<ItemSearch
 							items={blockItems}
@@ -187,7 +187,7 @@
 				<h3 class="text-2xl font-thin">Variables</h3>
 				<div>
 					{#if variableError}
-						<p class="text-lg font-medium text-red-400">{variableError.message}</p>
+						<p class="text-lg font-medium text-red-400">{variableError.error.message}</p>
 					{:else}
 						<ItemSearch
 							items={variableItems}

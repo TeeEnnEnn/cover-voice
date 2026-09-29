@@ -5,7 +5,7 @@ export const letterConfigSchema = registry.register(
 	'LetterConfigSchema',
 	z.object({
 		font: z.enum(['Courier', 'Helvetica', 'Times-Roman']).openapi({ example: 'Courier' }),
-		fontSize: z.number().openapi({ example: 16 }).positive(),
+		fontSize: z.number().openapi({ example: 16 }).positive().max(100),
 		fontColor: z
 			.string()
 			.regex(/^#[0-9A-Fa-f]{6}$/)
@@ -14,20 +14,20 @@ export const letterConfigSchema = registry.register(
 			.string()
 			.regex(/^#[0-9A-Fa-f]{6}$/)
 			.openapi({ example: '#ffffff' }),
-		lineHeight: z.number().openapi({ example: 1.5 }),
+		lineHeight: z.number().openapi({ example: 1.5 }).positive().max(10),
 		textDirection: z.enum(['ltr', 'rtl']).openapi({ example: 'ltr' }),
 		pageSize: z.enum(['A4', 'LETTER']).openapi({ example: 'A4' }),
-		marginLeft: z.number().openapi({ example: 10 }).nonnegative(), // points
-		marginRight: z.number().openapi({ example: 10 }).nonnegative(), // points
-		marginTop: z.number().openapi({ example: 10 }).nonnegative(), // points
-		marginBottom: z.number().openapi({ example: 10 }).nonnegative() // points
+		marginLeft: z.number().openapi({ example: 10 }).nonnegative().max(200), // points
+		marginRight: z.number().openapi({ example: 10 }).nonnegative().max(200), // points
+		marginTop: z.number().openapi({ example: 10 }).nonnegative().max(200), // points
+		marginBottom: z.number().openapi({ example: 10 }).nonnegative().max(200) // points
 	})
 );
 
 export const letterSectionSchema = registry.register(
 	'LetterSectionSchema',
 	z.object({
-		text: z.string().openapi({ example: 'blah blah blah' }).nullable(),
+		text: z.string().max(20000).openapi({ example: 'blah blah blah' }).nullable(),
 		align: z
 			.enum(['left', 'right', 'center', 'justify'])
 			.openapi({ example: 'left' })
@@ -55,7 +55,7 @@ export const letterSchema = registry.register(
 		createdAt: z.string().openapi({ format: 'date-time', example: '2026-08-13T00:00:00.000Z' }),
 		updatedAt: z.string().openapi({ format: 'date-time', example: '2026-08-13T00:00:00.000Z' }),
 		title: z.string().min(1).max(50).openapi({ example: 'Application at Acme' }),
-		description: z.string().nullish().openapi({ example: 'Cover letter for Acme' }),
+		description: z.string().max(500).nullish().openapi({ example: 'Cover letter for Acme' }),
 		// Null until the letter is generated for the first time.
 		rawContent: letterGenerationSchema.nullable(),
 		generatedContent: letterGenerationSchema.nullable()
@@ -66,18 +66,25 @@ export const createLetterSchema = registry.register(
 	'CreateLetterBody',
 	z.object({
 		title: z.string().min(1).max(50).openapi({ example: 'Application at Acme' }),
-		description: z.string().nullish().openapi({ example: 'Cover letter for Acme' })
+		description: z.string().max(500).nullish().openapi({ example: 'Cover letter for Acme' })
 	})
 );
 
 export const updateLetterSchema = registry.register(
 	'UpdateLetterBody',
-	z.object({
-		title: z.string().min(1).max(50).optional().openapi({ example: 'Application at Acme' }),
-		description: z.string().nullable().optional().openapi({ example: 'Cover letter for Acme' }),
-		rawContent: letterGenerationSchema.optional(),
-		generatedContent: letterGenerationSchema.optional()
-	})
+	z
+		.object({
+			title: z.string().min(1).max(50).optional().openapi({ example: 'Application at Acme' }),
+			description: z
+				.string()
+				.max(500)
+				.nullable()
+				.optional()
+				.openapi({ example: 'Cover letter for Acme' }),
+			rawContent: letterGenerationSchema.optional(),
+			generatedContent: letterGenerationSchema.optional()
+		})
+		.refine((body) => Object.keys(body).length > 0, { message: 'Nothing to update' })
 );
 
 export const generateLetterSchema = registry.register('GenerateLetterBody', letterGenerationSchema);

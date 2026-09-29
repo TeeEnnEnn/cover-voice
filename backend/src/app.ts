@@ -45,7 +45,7 @@ export function createApp() {
 	// Better Auth must be mounted before the json body parser.
 	app.all('/api/auth/{*any}', toNodeHandler(auth));
 
-	app.use(express.json());
+	app.use(express.json({ limit: '1mb' }));
 
 	app.use('/api', healthRouter);
 	app.use('/api', meRouter);

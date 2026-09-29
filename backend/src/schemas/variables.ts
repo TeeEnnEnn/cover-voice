@@ -16,17 +16,19 @@ export const variableSchema = registry.register(
 export const createVariableSchema = registry.register(
 	'CreateVariableBody',
 	z.object({
-		name: z.string().min(1).openapi({ example: 'linkedin' }),
-		value: z.string().min(1).openapi({ example: 'https://linkedin.com/...' })
+		name: z.string().trim().min(1).max(100).openapi({ example: 'linkedin' }),
+		value: z.string().min(1).max(20000).openapi({ example: 'https://linkedin.com/...' })
 	})
 );
 
 export const updateVariableSchema = registry.register(
 	'UpdateVariableBody',
-	z.object({
-		name: z.string().min(1).optional().openapi({ example: 'company_name' }),
-		value: z.string().min(1).optional().openapi({ example: 'New company name' })
-	})
+	z
+		.object({
+			name: z.string().trim().min(1).max(100).optional().openapi({ example: 'company_name' }),
+			value: z.string().min(1).max(20000).optional().openapi({ example: 'New company name' })
+		})
+		.refine((body) => Object.keys(body).length > 0, { message: 'Nothing to update' })
 );
 
 export const variableListSchema = registry.register(

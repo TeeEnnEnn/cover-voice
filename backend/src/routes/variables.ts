@@ -2,7 +2,7 @@ import { Router } from 'express';
 import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import { validate } from '../middleware/validate.js';
-import { serializeTimestamps } from '../crud/helpers.js';
+import { isUniqueViolation, serializeTimestamps } from '../crud/helpers.js';
 import { createVariable, deleteVariable, getVariables, updateVariable } from '../crud/variable.js';
 import { getVariableUsage } from '../crud/usage.js';
 import {
@@ -12,7 +12,7 @@ import {
 	updateVariableSchema
 } from '../schemas/variables.js';
 import { forceQuerySchema, variableUsageSchema } from '../schemas/usage.js';
-import { validationErrorSchema } from '../schemas/common.js';
+import { idParamSchema, paginationQuerySchema, validationErrorSchema } from '../schemas/common.js';
 import { registry } from '../openapi/registry.js';
 
 registry.registerPath({
@@ -21,6 +21,9 @@ registry.registerPath({
 	summary: "List the current user's variables",
 	tags: ['variables'],
 	security: [{ cookieAuth: [] }],
+	request: {
+		query: paginationQuerySchema
+	},
 	responses: {
 		200: {
 			description: "The current user's variables",
@@ -28,7 +31,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -53,9 +56,13 @@ registry.registerPath({
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		},
+		409: {
+			description: 'Variable name already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -67,7 +74,7 @@ registry.registerPath({
 	tags: ['variables'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		params: idParamSchema,
 		query: forceQuerySchema
 	},
 	responses: {
@@ -96,7 +103,7 @@ registry.registerPath({
 	tags: ['variables'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -109,7 +116,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -124,7 +131,7 @@ registry.registerPath({
 		body: {
 			content: { 'application/json': { schema: updateVariableSchema } }
 		},
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -138,17 +145,29 @@ registry.registerPath({
 		400: {
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Variable name already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
 
 const router = Router();
 
-router.get('/variables', requireAuth, async (_req, res) => {
-	const userId = res.locals.user!.id;
-	const { variables } = await getVariables(userId);
-	res.json({ variables: variables.map(serializeTimestamps) });
-});
+router.get(
+	'/variables',
+	requireAuth,
+	validate({ query: paginationQuerySchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const { variables } = await getVariables(
+			userId,
+			req.query as unknown as { limit: number; offset: number }
+		);
+		res.json({ variables: variables.map(serializeTimestamps) });
+	}
+);
 
 router.post(
 	'/variables',
@@ -156,26 +175,39 @@ router.post(
 	validate({ body: createVariableSchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
-		const insertedVariable = await createVariable(userId, req.body);
-		res.status(201).json(serializeTimestamps(insertedVariable));
+		try {
+			const insertedVariable = await createVariable(userId, req.body);
+			res.status(201).json(serializeTimestamps(insertedVariable));
+		} catch (err) {
+			if (isUniqueViolation(err)) {
+				res.status(409).json({ error: { message: 'Variable name already exists', details: [] } });
+				return;
+			}
+			throw err;
+		}
 	}
 );
 
-router.get('/variables/:id/usage', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const variableId = req.params.id as string;
-	const usage = await getVariableUsage(userId, variableId);
-	if (!usage) {
-		res.status(404).json({ error: { message: 'variable not found', details: [] } });
-		return;
+router.get(
+	'/variables/:id/usage',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const variableId = req.params.id as string;
+		const usage = await getVariableUsage(userId, variableId);
+		if (!usage) {
+			res.status(404).json({ error: { message: 'variable not found', details: [] } });
+			return;
+		}
+		res.json(usage);
 	}
-	res.json(usage);
-});
+);
 
 router.delete(
 	'/variables/:id',
 	requireAuth,
-	validate({ query: forceQuerySchema }),
+	validate({ params: idParamSchema, query: forceQuerySchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const variableId = req.params.id as string;
@@ -203,16 +235,24 @@ router.delete(
 router.patch(
 	'/variables/:id',
 	requireAuth,
-	validate({ body: updateVariableSchema }),
+	validate({ params: idParamSchema, body: updateVariableSchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const variableId = req.params.id as string;
-		const updated = await updateVariable(userId, variableId, req.body);
-		if (!updated) {
-			res.status(404).json({ error: { message: 'variable not found', details: [] } });
-			return;
+		try {
+			const updated = await updateVariable(userId, variableId, req.body);
+			if (!updated) {
+				res.status(404).json({ error: { message: 'variable not found', details: [] } });
+				return;
+			}
+			res.status(200).json(serializeTimestamps(updated));
+		} catch (err) {
+			if (isUniqueViolation(err)) {
+				res.status(409).json({ error: { message: 'Variable name already exists', details: [] } });
+				return;
+			}
+			throw err;
 		}
-		res.status(200).json(serializeTimestamps(updated));
 	}
 );
 

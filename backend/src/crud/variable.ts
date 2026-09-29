@@ -3,13 +3,16 @@ import { variableTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateVariableInput, UpdateVariableInput } from '../schemas/variables.js';
 import { resyncUserUsage } from '../services/usage-sync.js';
+import { stripUndefined } from './helpers.js';
 
-export async function getVariables(userId: string) {
+export async function getVariables(userId: string, pagination?: { limit: number; offset: number }) {
 	const rows = await db
 		.select()
 		.from(variableTable)
 		.where(eq(variableTable.userId, userId))
-		.orderBy(desc(variableTable.updatedAt));
+		.orderBy(desc(variableTable.updatedAt))
+		.limit(pagination?.limit ?? 100)
+		.offset(pagination?.offset ?? 0);
 	return {
 		variables: rows
 	};
@@ -46,10 +49,7 @@ export async function updateVariable(userId: string, id: string, data: UpdateVar
 		const updated = (
 			await tx
 				.update(variableTable)
-				.set({
-					name: data.name,
-					value: data.value
-				})
+				.set(stripUndefined({ name: data.name, value: data.value }))
 				.where(and(eq(variableTable.userId, userId), eq(variableTable.id, id)))
 				.returning()
 		)[0];

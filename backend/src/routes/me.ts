@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { fromNodeHeaders } from 'better-auth/node';
 import { registry } from '../openapi/registry.js';
+import { validationErrorSchema } from '../schemas/common.js';
 import { auth } from '../auth.js';
 
 const user = z.object({
@@ -10,9 +11,6 @@ const user = z.object({
 	email: z.email()
 });
 const meOk = z.object({ user });
-const unauthorized = z.object({
-	message: z.string()
-});
 
 registry.registerPath({
 	method: 'get',
@@ -26,7 +24,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: unauthorized } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -34,11 +32,17 @@ registry.registerPath({
 const router = Router();
 
 router.get('/me', async (req, res) => {
-	const session = await auth.api.getSession({
-		headers: fromNodeHeaders(req.headers)
-	});
+	let session;
+	try {
+		session = await auth.api.getSession({
+			headers: fromNodeHeaders(req.headers)
+		});
+	} catch {
+		res.status(500).json({ error: { message: 'Failed to verify session', details: [] } });
+		return;
+	}
 	if (!session) {
-		res.status(401).json({ message: 'Unauthorized' } satisfies z.infer<typeof unauthorized>);
+		res.status(401).json({ error: { message: 'Unauthorized', details: [] } });
 		return;
 	}
 	const { user: u } = session;

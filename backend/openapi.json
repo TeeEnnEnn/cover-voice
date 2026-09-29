@@ -63,11 +63,13 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 100,
             "example": "greeting"
           },
           "value": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 20000,
             "example": "Hello my name is ${..."
           }
         },
@@ -82,11 +84,13 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 100,
             "example": "test"
           },
           "value": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 20000,
             "example": "some value"
           }
         }
@@ -348,11 +352,13 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 100,
             "example": "linkedin"
           },
           "value": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 20000,
             "example": "https://linkedin.com/..."
           }
         },
@@ -367,11 +373,13 @@
           "name": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 100,
             "example": "company_name"
           },
           "value": {
             "type": "string",
             "minLength": 1,
+            "maxLength": 20000,
             "example": "New company name"
           }
         }
@@ -406,6 +414,7 @@
             "type": "number",
             "minimum": 0,
             "exclusiveMinimum": true,
+            "maximum": 100,
             "example": 16
           },
           "fontColor": {
@@ -420,6 +429,9 @@
           },
           "lineHeight": {
             "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "maximum": 10,
             "example": 1.5
           },
           "textDirection": {
@@ -441,21 +453,25 @@
           "marginLeft": {
             "type": "number",
             "minimum": 0,
+            "maximum": 200,
             "example": 10
           },
           "marginRight": {
             "type": "number",
             "minimum": 0,
+            "maximum": 200,
             "example": 10
           },
           "marginTop": {
             "type": "number",
             "minimum": 0,
+            "maximum": 200,
             "example": 10
           },
           "marginBottom": {
             "type": "number",
             "minimum": 0,
+            "maximum": 200,
             "example": 10
           }
         },
@@ -479,6 +495,7 @@
           "text": {
             "type": "string",
             "nullable": true,
+            "maxLength": 20000,
             "example": "blah blah blah"
           },
           "align": {
@@ -558,6 +575,7 @@
           "description": {
             "type": "string",
             "nullable": true,
+            "maxLength": 500,
             "example": "Cover letter for Acme"
           },
           "rawContent": {
@@ -603,6 +621,7 @@
           "description": {
             "type": "string",
             "nullable": true,
+            "maxLength": 500,
             "example": "Cover letter for Acme"
           }
         },
@@ -622,6 +641,7 @@
           "description": {
             "type": "string",
             "nullable": true,
+            "maxLength": 500,
             "example": "Cover letter for Acme"
           },
           "rawContent": {
@@ -796,12 +816,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -819,6 +866,32 @@
         "security": [
           {
             "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100,
+              "example": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0,
+              "example": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
           }
         ],
         "responses": {
@@ -839,12 +912,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -934,12 +1034,84 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Block name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
                   ]
                 }
               }
@@ -963,6 +1135,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1103,6 +1276,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1219,6 +1393,51 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Block name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -1238,6 +1457,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1263,12 +1483,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -1333,6 +1580,32 @@
             "cookieAuth": []
           }
         ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100,
+              "example": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0,
+              "example": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "The current user's variables",
@@ -1351,12 +1624,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -1446,12 +1746,84 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Variable name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
                   ]
                 }
               }
@@ -1475,6 +1847,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1615,6 +1988,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1731,6 +2105,51 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Variable name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -1750,6 +2169,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -1775,12 +2195,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -1845,6 +2292,32 @@
             "cookieAuth": []
           }
         ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500,
+              "default": 100,
+              "example": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0,
+              "default": 0,
+              "example": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "The current user's letters",
@@ -1863,12 +2336,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -1958,12 +2458,84 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Letter title already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
                   ]
                 }
               }
@@ -1987,6 +2559,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2104,6 +2677,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2220,6 +2794,51 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Letter title already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
           }
         }
       },
@@ -2237,6 +2856,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2262,12 +2882,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -2336,6 +2983,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2370,12 +3018,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -2489,6 +3164,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2514,12 +3190,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }
@@ -2588,6 +3291,7 @@
           {
             "schema": {
               "type": "string",
+              "minLength": 1,
               "example": "abc123"
             },
             "required": true,
@@ -2614,12 +3318,39 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": {
-                      "type": "string"
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
                     }
                   },
                   "required": [
-                    "message"
+                    "error"
                   ]
                 }
               }

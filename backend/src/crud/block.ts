@@ -3,13 +3,16 @@ import { blockTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateBlockInput, UpdateBlockInput } from '../schemas/blocks.js';
 import { resyncUserLetters, syncBlockVariables } from '../services/usage-sync.js';
+import { stripUndefined } from './helpers.js';
 
-export async function getBlocks(userId: string) {
+export async function getBlocks(userId: string, pagination?: { limit: number; offset: number }) {
 	const rows = await db
 		.select()
 		.from(blockTable)
 		.where(eq(blockTable.userId, userId))
-		.orderBy(desc(blockTable.updatedAt));
+		.orderBy(desc(blockTable.updatedAt))
+		.limit(pagination?.limit ?? 100)
+		.offset(pagination?.offset ?? 0);
 	return {
 		blocks: rows
 	};
@@ -39,10 +42,7 @@ export async function updateBlock(userId: string, id: string, data: UpdateBlockI
 		const updated = (
 			await tx
 				.update(blockTable)
-				.set({
-					name: data.name,
-					value: data.value
-				})
+				.set(stripUndefined({ name: data.name, value: data.value }))
 				.where(and(eq(blockTable.userId, userId), eq(blockTable.id, id)))
 				.returning()
 		)[0];

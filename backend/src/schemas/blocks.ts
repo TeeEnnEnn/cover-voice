@@ -16,17 +16,19 @@ export const blockSchema = registry.register(
 export const createBlockSchema = registry.register(
 	'CreateBlockBody',
 	z.object({
-		name: z.string().min(1).openapi({ example: 'greeting' }),
-		value: z.string().min(1).openapi({ example: 'Hello my name is ${...' })
+		name: z.string().trim().min(1).max(100).openapi({ example: 'greeting' }),
+		value: z.string().min(1).max(20000).openapi({ example: 'Hello my name is ${...' })
 	})
 );
 
 export const updateBlockSchema = registry.register(
 	'UpdateBlockBody',
-	z.object({
-		name: z.string().min(1).optional().openapi({ example: 'test' }),
-		value: z.string().min(1).optional().openapi({ example: 'some value' })
-	})
+	z
+		.object({
+			name: z.string().trim().min(1).max(100).optional().openapi({ example: 'test' }),
+			value: z.string().min(1).max(20000).optional().openapi({ example: 'some value' })
+		})
+		.refine((body) => Object.keys(body).length > 0, { message: 'Nothing to update' })
 );
 
 export const blockListSchema = registry.register(

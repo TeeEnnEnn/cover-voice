@@ -10,9 +10,9 @@ import {
 	updateBlockSchema
 } from '../schemas/blocks.js';
 import { blockUsageSchema, forceQuerySchema } from '../schemas/usage.js';
-import { validationErrorSchema } from '../schemas/common.js';
+import { idParamSchema, paginationQuerySchema, validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
-import { serializeTimestamps } from '../crud/helpers.js';
+import { isUniqueViolation, serializeTimestamps } from '../crud/helpers.js';
 import { registry } from '../openapi/registry.js';
 
 registry.registerPath({
@@ -21,6 +21,9 @@ registry.registerPath({
 	summary: "List the current user's blocks",
 	tags: ['blocks'],
 	security: [{ cookieAuth: [] }],
+	request: {
+		query: paginationQuerySchema
+	},
 	responses: {
 		200: {
 			description: "The current user's blocks",
@@ -28,7 +31,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -53,9 +56,13 @@ registry.registerPath({
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		},
+		409: {
+			description: 'Block name already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -67,7 +74,7 @@ registry.registerPath({
 	tags: ['blocks'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		params: idParamSchema,
 		query: forceQuerySchema
 	},
 	responses: {
@@ -96,7 +103,7 @@ registry.registerPath({
 	tags: ['blocks'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -109,7 +116,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -124,7 +131,7 @@ registry.registerPath({
 		body: {
 			content: { 'application/json': { schema: updateBlockSchema } }
 		},
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -138,28 +145,43 @@ registry.registerPath({
 		400: {
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Block name already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
 
 const router = Router();
 
-router.get('/blocks', requireAuth, async (_req, res) => {
+router.get('/blocks', requireAuth, validate({ query: paginationQuerySchema }), async (req, res) => {
 	const userId = res.locals.user!.id;
-	const { blocks } = await getBlocks(userId);
+	const { blocks } = await getBlocks(
+		userId,
+		req.query as unknown as { limit: number; offset: number }
+	);
 	res.json({ blocks: blocks.map(serializeTimestamps) });
 });
 
 router.post('/blocks', requireAuth, validate({ body: createBlockSchema }), async (req, res) => {
 	const userId = res.locals.user!.id;
-	const insertedBlock = await createBlock(userId, req.body);
-	res.status(201).json(serializeTimestamps(insertedBlock));
+	try {
+		const insertedBlock = await createBlock(userId, req.body);
+		res.status(201).json(serializeTimestamps(insertedBlock));
+	} catch (err) {
+		if (isUniqueViolation(err)) {
+			res.status(409).json({ error: { message: 'Block name already exists', details: [] } });
+			return;
+		}
+		throw err;
+	}
 });
 
 router.delete(
 	'/blocks/:id',
 	requireAuth,
-	validate({ query: forceQuerySchema }),
+	validate({ params: idParamSchema, query: forceQuerySchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const blockId = req.params.id as string;
@@ -184,30 +206,43 @@ router.delete(
 	}
 );
 
-router.get('/blocks/:id/usage', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const blockId = req.params.id as string;
-	const usage = await getBlockUsage(userId, blockId);
-	if (!usage) {
-		res.status(404).json({ error: { message: 'Block not found', details: [] } });
-		return;
+router.get(
+	'/blocks/:id/usage',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const blockId = req.params.id as string;
+		const usage = await getBlockUsage(userId, blockId);
+		if (!usage) {
+			res.status(404).json({ error: { message: 'Block not found', details: [] } });
+			return;
+		}
+		res.json(usage);
 	}
-	res.json(usage);
-});
+);
 
 router.patch(
 	'/blocks/:id',
 	requireAuth,
-	validate({ body: updateBlockSchema }),
+	validate({ params: idParamSchema, body: updateBlockSchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const blockId = req.params.id as string;
-		const updated = await updateBlock(userId, blockId, req.body);
-		if (!updated) {
-			res.status(404).json({ error: { message: 'Block not found', details: [] } });
-			return;
+		try {
+			const updated = await updateBlock(userId, blockId, req.body);
+			if (!updated) {
+				res.status(404).json({ error: { message: 'Block not found', details: [] } });
+				return;
+			}
+			res.status(200).json(serializeTimestamps(updated));
+		} catch (err) {
+			if (isUniqueViolation(err)) {
+				res.status(409).json({ error: { message: 'Block name already exists', details: [] } });
+				return;
+			}
+			throw err;
 		}
-		res.status(200).json(serializeTimestamps(updated));
 	}
 );
 

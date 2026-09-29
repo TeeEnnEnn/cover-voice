@@ -20,9 +20,9 @@ import {
 } from '../schemas/letters.js';
 import { letterUsageSchema } from '../schemas/usage.js';
 import { renderLetterPdf } from '../services/pdf.js';
-import { validationErrorSchema } from '../schemas/common.js';
+import { idParamSchema, paginationQuerySchema, validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
-import { serializeTimestamps } from '../crud/helpers.js';
+import { isUniqueViolation, serializeTimestamps } from '../crud/helpers.js';
 import { registry } from '../openapi/registry.js';
 
 registry.registerPath({
@@ -31,6 +31,9 @@ registry.registerPath({
 	summary: "List the current user's letters",
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
+	request: {
+		query: paginationQuerySchema
+	},
 	responses: {
 		200: {
 			description: "The current user's letters",
@@ -38,7 +41,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -63,9 +66,13 @@ registry.registerPath({
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		},
+		409: {
+			description: 'Letter title already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -77,7 +84,7 @@ registry.registerPath({
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		204: {
@@ -104,7 +111,7 @@ registry.registerPath({
 		body: {
 			content: { 'application/json': { schema: updateLetterSchema } }
 		},
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -118,6 +125,10 @@ registry.registerPath({
 		400: {
 			description: 'Invalid body',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Letter title already exists',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -129,7 +140,7 @@ registry.registerPath({
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -142,7 +153,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -154,7 +165,7 @@ registry.registerPath({
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) }),
+		params: idParamSchema,
 		body: {
 			content: { 'application/json': { schema: generateLetterSchema } }
 		}
@@ -174,7 +185,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -186,7 +197,7 @@ registry.registerPath({
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -199,7 +210,7 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -211,7 +222,7 @@ registry.registerPath({
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
-		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+		params: idParamSchema
 	},
 	responses: {
 		200: {
@@ -232,26 +243,42 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
-			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
 
 const router = Router();
 
-router.get('/letters', requireAuth, async (_req, res) => {
-	const userId = res.locals.user!.id;
-	const { letters } = await getLetters(userId);
-	res.json({ letters: letters.map(serializeTimestamps) });
-});
+router.get(
+	'/letters',
+	requireAuth,
+	validate({ query: paginationQuerySchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const { letters } = await getLetters(
+			userId,
+			req.query as unknown as { limit: number; offset: number }
+		);
+		res.json({ letters: letters.map(serializeTimestamps) });
+	}
+);
 
 router.post('/letters', requireAuth, validate({ body: createLetterSchema }), async (req, res) => {
 	const userId = res.locals.user!.id;
-	const insertedLetter = await createLetter(userId, req.body);
-	res.status(201).json(serializeTimestamps(insertedLetter));
+	try {
+		const insertedLetter = await createLetter(userId, req.body);
+		res.status(201).json(serializeTimestamps(insertedLetter));
+	} catch (err) {
+		if (isUniqueViolation(err)) {
+			res.status(409).json({ error: { message: 'Letter title already exists', details: [] } });
+			return;
+		}
+		throw err;
+	}
 });
 
-router.get('/letters/:id', requireAuth, async (req, res) => {
+router.get('/letters/:id', requireAuth, validate({ params: idParamSchema }), async (req, res) => {
 	const userId = res.locals.user!.id;
 	const letterId = req.params.id as string;
 	const letter = await getLetterById(userId, letterId);
@@ -262,74 +289,97 @@ router.get('/letters/:id', requireAuth, async (req, res) => {
 	res.status(200).json(serializeTimestamps(letter));
 });
 
-router.get('/letters/:id/usage', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const letterId = req.params.id as string;
-	const usage = await getLetterUsage(userId, letterId);
-	if (!usage) {
-		res.status(404).json({ error: { message: 'Letter not found', details: [] } });
-		return;
+router.get(
+	'/letters/:id/usage',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const usage = await getLetterUsage(userId, letterId);
+		if (!usage) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		res.json(usage);
 	}
-	res.json(usage);
-});
+);
 
-router.get('/letters/:id/export', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const letterId = req.params.id as string;
-	const letter = await getLetterById(userId, letterId);
-	if (!letter) {
-		res.status(404).json({ error: { message: 'Letter not found', details: [] } });
-		return;
+router.get(
+	'/letters/:id/export',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const letter = await getLetterById(userId, letterId);
+		if (!letter) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		const parsed = letterGenerationSchema.safeParse(letter.generatedContent);
+		if (!parsed.success) {
+			res.status(409).json({
+				error: {
+					message: 'Letter has not been generated yet. Generate it before exporting.',
+					details: []
+				}
+			});
+			return;
+		}
+		const pdf = await renderLetterPdf(parsed.data);
+		const filename = `${letter.title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
+		res.setHeader('Content-Type', 'application/pdf');
+		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+		res.setHeader('Content-Length', pdf.length);
+		res.status(200).send(pdf);
 	}
-	const parsed = letterGenerationSchema.safeParse(letter.generatedContent);
-	if (!parsed.success) {
-		res.status(409).json({
-			error: {
-				message: 'Letter has not been generated yet. Generate it before exporting.',
-				details: []
-			}
-		});
-		return;
-	}
-	const pdf = await renderLetterPdf(parsed.data);
-	const filename = `${letter.title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
-	res.setHeader('Content-Type', 'application/pdf');
-	res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-	res.setHeader('Content-Length', pdf.length);
-	res.status(200).send(pdf);
-});
+);
 
-router.delete('/letters/:id', requireAuth, async (req, res) => {
-	const userId = res.locals.user!.id;
-	const letterId = req.params.id as string;
-	const deleted = await deleteLetter(userId, letterId);
-	if (!deleted) {
-		res.status(404).json({ error: { message: 'Letter not found', details: [] } });
-		return;
+router.delete(
+	'/letters/:id',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const deleted = await deleteLetter(userId, letterId);
+		if (!deleted) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		res.status(204).send();
 	}
-	res.status(204).send();
-});
+);
 
 router.patch(
 	'/letters/:id',
 	requireAuth,
-	validate({ body: updateLetterSchema }),
+	validate({ params: idParamSchema, body: updateLetterSchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const letterId = req.params.id as string;
-		const updated = await updateLetter(userId, letterId, req.body);
-		if (!updated) {
-			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
-			return;
+		try {
+			const updated = await updateLetter(userId, letterId, req.body);
+			if (!updated) {
+				res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+				return;
+			}
+			res.status(200).json(serializeTimestamps(updated));
+		} catch (err) {
+			if (isUniqueViolation(err)) {
+				res.status(409).json({ error: { message: 'Letter title already exists', details: [] } });
+				return;
+			}
+			throw err;
 		}
-		res.status(200).json(serializeTimestamps(updated));
 	}
 );
 
 router.post(
 	'/letters/:id/generate',
 	requireAuth,
-	validate({ body: generateLetterSchema }),
+	validate({ params: idParamSchema, body: generateLetterSchema }),
 	async (req, res) => {
 		const userId = res.locals.user!.id;
 		const letterId = req.params.id as string;
