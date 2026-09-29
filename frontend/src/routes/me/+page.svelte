@@ -37,6 +37,19 @@
 	let creatingNewBlock = $state(false);
 	let creatingNewVariable = $state(false);
 
+	$effect(() => {
+		if (form?.action === 'newLetter' && form?.success) {
+			creatingNewLetter = false;
+			goto(`/letters/${form?.letter.id}`);
+		}
+		if (form?.action === 'newBlock' && form?.success) {
+			creatingNewBlock = false;
+		}
+		if (form?.action === 'newVariable' && form?.success) {
+			creatingNewVariable = false;
+		}
+	});
+
 	const greeting_choices = [
 		'Welcome',
 		'Missed you',
@@ -60,22 +73,6 @@
 	const greeting = greeting_choices[Math.floor((Math.random() * 100) % greeting_choices.length)];
 	const second_greeting =
 		second_greeting_choices[Math.floor((Math.random() * 100) % second_greeting_choices.length)];
-
-	let countdown = $state(5);
-	$effect(() => {
-		if (form?.action === 'newLetter' && form?.success) {
-			creatingNewLetter = false;
-			countdown = 5;
-			const interval = setInterval(() => {
-				countdown -= 1;
-				if (countdown <= 0) {
-					clearInterval(interval);
-					goto(`/letters/${form?.letter.id}`);
-				}
-			}, 1000);
-			return () => clearInterval(interval);
-		}
-	});
 </script>
 
 <div class="container mx-auto my-24 space-y-16">
@@ -90,8 +87,10 @@
 	{/if}
 
 	<div>
-		<div class="flex w-full flex-col gap-10 lg:flex-row">
-			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
+		<div class="grid w-full grid-cols-1 gap-10 lg:grid-cols-3">
+			<div
+				class="flex flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm lg:col-span-2"
+			>
 				<h3 class="text-2xl font-thin">Letters</h3>
 				<div>
 					{#if letterError}
@@ -109,14 +108,6 @@
 				</div>
 				<CreateToggle bind:creating={creatingNewLetter} label="Letter" />
 				<div class="mt-auto">
-					{#if form?.action === 'newLetter' && form?.success}
-						<div class="flex flex-col">
-							<p class="text-lg text-green-400">New Letter created successfully!</p>
-							<small class="text-sm font-light text-muted-foreground"
-								>Redirecting to new letter page in {countdown} seconds</small
-							>
-						</div>
-					{/if}
 					{#if creatingNewLetter}
 						<div transition:slide>
 							<form
@@ -140,90 +131,102 @@
 					{/if}
 				</div>
 			</div>
-			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3 class="text-2xl font-thin">Blocks</h3>
-				<div>
-					{#if blockError}
-						<p class="text-lg font-medium text-red-400">{blockError.error.message}</p>
-					{:else}
-						<ItemSearch
-							items={blockItems}
-							selected={selectedBlock}
-							onSelect={(block) => {
-								selectedBlock = block;
-							}}
-							label="block"
-							kind="block"
-							usages={blockUsages}
-						/>
-					{/if}
+			<div class="flex flex-col gap-10">
+				<div
+					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
+				>
+					<h3 class="text-2xl font-thin">Blocks</h3>
+					<div>
+						{#if blockError}
+							<p class="text-lg font-medium text-red-400">{blockError.error.message}</p>
+						{:else}
+							<ItemSearch
+								items={blockItems}
+								selected={selectedBlock}
+								onSelect={(block) => {
+									selectedBlock = block;
+								}}
+								label="block"
+								kind="block"
+								usages={blockUsages}
+							/>
+						{/if}
+					</div>
+					<CreateToggle bind:creating={creatingNewBlock} label="Block" />
+					<div class="mt-auto space-y-6">
+						{#if creatingNewBlock}
+							<div transition:slide>
+								<form
+									action="?/newBlock"
+									method="post"
+									class="flex flex-col gap-4 font-light"
+									use:enhance
+								>
+									<h4 class="text-xl">Add a new block</h4>
+									<div>
+										<Label for="blockName" class="text-lg font-light">block name</Label>
+										<Input type="text" id="blockName" name="blockName" required />
+									</div>
+									<div>
+										<Label for="blockValue" class="text-lg font-light">block value</Label>
+										<Textarea name="blockValue" id="blockValue" required />
+									</div>
+									<Input type="submit" value="Create" />
+								</form>
+							</div>
+						{/if}
+						{#if form?.action === 'newBlock' && form?.success}
+							<p class="text-sm text-green-700" role="status">Block created.</p>
+						{/if}
+					</div>
 				</div>
-				<CreateToggle bind:creating={creatingNewBlock} label="Block" />
-				<div class="mt-auto space-y-6">
-					{#if creatingNewBlock}
-						<div transition:slide>
-							<form
-								action="?/newBlock"
-								method="post"
-								class="flex flex-col gap-4 font-light"
-								use:enhance
-							>
-								<h4 class="text-xl">Add a new block</h4>
-								<div>
-									<Label for="blockName" class="text-lg font-light">block name</Label>
-									<Input type="text" id="blockName" name="blockName" required />
-								</div>
-								<div>
-									<Label for="blockValue" class="text-lg font-light">block value</Label>
-									<Textarea name="blockValue" id="blockValue" required />
-								</div>
-								<Input type="submit" value="Create" />
-							</form>
-						</div>
-					{/if}
-				</div>
-			</div>
-			<div class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 px-4 py-4">
-				<h3 class="text-2xl font-thin">Variables</h3>
-				<div>
-					{#if variableError}
-						<p class="text-lg font-medium text-red-400">{variableError.error.message}</p>
-					{:else}
-						<ItemSearch
-							items={variableItems}
-							selected={selectedVariable}
-							onSelect={(variable) => {
-								selectedVariable = variable;
-							}}
-							label="variable"
-							kind="variable"
-							usages={variableUsages}
-						/>
-					{/if}
-				</div>
-				<CreateToggle bind:creating={creatingNewVariable} label="Variable" />
-				<div class="mt-auto">
-					{#if creatingNewVariable}
-						<div transition:slide>
-							<form
-								action="?/newVariable"
-								method="post"
-								class="flex flex-col gap-4 font-light"
-								use:enhance
-							>
-								<h4 class="text-xl">Add a new Variable</h4>
-								<div>
-									<Label for="variableName" class="text-lg font-light">Name</Label>
-									<Input type="text" id="variableName" name="variableName" required />
-								</div>
-								<div>
-									<Label for="variableValue" class="text-lg font-light">Value</Label>
-									<Textarea name="variableValue" id="variableValue" required />
-								</div>
-								<Input type="submit" value="Create" />
-							</form>
-						</div>
-					{/if}
+				<div
+					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
+				>
+					<h3 class="text-2xl font-thin">Variables</h3>
+					<div>
+						{#if variableError}
+							<p class="text-lg font-medium text-red-400">{variableError.error.message}</p>
+						{:else}
+							<ItemSearch
+								items={variableItems}
+								selected={selectedVariable}
+								onSelect={(variable) => {
+									selectedVariable = variable;
+								}}
+								label="variable"
+								kind="variable"
+								usages={variableUsages}
+							/>
+						{/if}
+					</div>
+					<CreateToggle bind:creating={creatingNewVariable} label="Variable" />
+					<div class="mt-auto">
+						{#if creatingNewVariable}
+							<div transition:slide>
+								<form
+									action="?/newVariable"
+									method="post"
+									class="flex flex-col gap-4 font-light"
+									use:enhance
+								>
+									<h4 class="text-xl">Add a new Variable</h4>
+									<div>
+										<Label for="variableName" class="text-lg font-light">Name</Label>
+										<Input type="text" id="variableName" name="variableName" required />
+									</div>
+									<div>
+										<Label for="variableValue" class="text-lg font-light">Value</Label>
+										<Textarea name="variableValue" id="variableValue" required />
+									</div>
+									<Input type="submit" value="Create" />
+								</form>
+							</div>
+						{/if}
+						{#if form?.action === 'newVariable' && form?.success}
+							<p class="text-sm text-green-700" role="status">Variable created.</p>
+						{/if}
+					</div>
 				</div>
 			</div>
 		</div>

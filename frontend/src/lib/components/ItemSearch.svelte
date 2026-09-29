@@ -25,6 +25,28 @@
 
 	let query = $state('');
 	let filtered = $derived(filterByName(items, query));
+
+	function usageBadgeFor(id: string): { text: string; title: string } | null {
+		const u = usages[id];
+		if (!u) return null;
+		if (kind === 'block') {
+			const letters = u.letterCount;
+			const vars = u.variableCount ?? 0;
+			const total = letters + vars;
+			if (total === 0) return { text: 'unused', title: 'Not used by any letter' };
+			return {
+				text: `${total} use${total === 1 ? '' : 's'}`,
+				title: `Used in ${letters} letter(s), uses ${vars} variable(s)`
+			};
+		}
+		const blocks = u.blockCount ?? 0;
+		const total = blocks + u.letterCount;
+		if (total === 0) return { text: 'unused', title: 'Not used anywhere' };
+		return {
+			text: `${total} use${total === 1 ? '' : 's'}`,
+			title: `Used in ${blocks} block(s) and ${u.letterCount} letter(s)`
+		};
+	}
 </script>
 
 <div class="flex flex-col gap-2">
@@ -40,7 +62,11 @@
 				onSelect(item);
 			}}
 		>
-			<ItemOneLiner name={item.name} lastUpdated={item.updatedAt} />
+			<ItemOneLiner
+				name={item.name}
+				lastUpdated={item.updatedAt}
+				usageBadge={usageBadgeFor(item.id)}
+			/>
 		</button>
 	{:else}
 		<p class="text-sm text-muted-foreground">
