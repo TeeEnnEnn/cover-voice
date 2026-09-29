@@ -28,25 +28,17 @@
 	let bodyAlign = $state<Align>(initialSections.body.align ?? 'left');
 	let footerAlign = $state<Align>(initialSections.footer.align ?? 'left');
 
+	let previewUrl = $state<string | null>(null);
 	let previewLoading = $state(false);
 	let previewHint = $state<string | null>('Press Update Preview to render the current sections.');
 	let downloading = $state(false);
 	let downloadError = $state<string | null>(null);
 
-	// Double-buffered preview: the new PDF loads in the hidden iframe and only
-	// becomes visible on its `load` event, so the viewer never flashes white
-	// mid-swap. Raw blob URLs are stored (fragment appended at render time so
-	// revocation stays straightforward).
-	let urlA = $state<string | null>(null);
-	let urlB = $state<string | null>(null);
-	let topIsA = $state(true);
-	let staging: { slot: 'A' | 'B'; seq: number } | null = null;
-	const PDF_VIEWER_FRAGMENT = '#toolbar=0&navpanes=0';
-	const CROSSFADE_MS = 200;
-
-	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-	let activeController: AbortController | null = null;
-	let fetchSeq = 0;
+	// Autosave: sections persist shortly after the user stops typing.
+	// Preview is strictly opt-in via Update Preview / Download.
+	let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
+	let saveError = $state<string | null>(null);
+	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	const letterId = data.letter.id;
 
 	const DEFAULT_CONFIG = {
@@ -75,10 +67,7 @@
 	}
 
 	async function fetchPreview(content: LetterGeneration) {
-		activeController?.abort();
-		const controller = new AbortController();
-		activeController = controller;
-		const seq = ++fetchSeq;
+		if (previewLoading) return;
 		previewLoading = true;
 		previewHint = null;
 		try {
@@ -86,72 +75,52 @@
 				method: 'POST',
 				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(content),
-				signal: controller.signal
+				body: JSON.stringify(content)
 			});
 			if (!response.ok) {
-				// Transient failure (e.g. half-typed {% %}%}): keep the last good
-				// PDF and show a non-blocking hint instead of an error state.
-				previewHint = 'Preview paused — check block/variable names, then update again.';
+				previewHint = 'Preview failed — check block/variable names, then update again.';
 				return;
 			}
-			if (controller.signal.aborted || seq !== fetchSeq) return;
 			const blob = await response.blob();
-			if (controller.signal.aborted || seq !== fetchSeq) return;
-			stagePreview(URL.createObjectURL(blob), seq);
-		} catch (err) {
-			if (err instanceof DOMException && err.name === 'AbortError') return;
+			if (previewUrl) URL.revokeObjectURL(previewUrl);
+			previewUrl = URL.createObjectURL(blob);
+		} catch {
 			previewHint = 'Preview failed. Press Update Preview to retry.';
 		} finally {
-			if (activeController === controller) activeController = null;
 			previewLoading = false;
 		}
 	}
 
-	/**
-	 * Parks a fresh blob URL in the background iframe. It is promoted to
-	 * visible only from that iframe's `load` event (see onFrameLoad), so a
-	 * slow render never shows a half-loaded viewer.
-	 */
-	function stagePreview(rawUrl: string, seq: number) {
-		if (seq !== fetchSeq) {
-			URL.revokeObjectURL(rawUrl);
-			return;
-		}
-		const slot = topIsA ? 'B' : 'A';
-		const prev = slot === 'A' ? urlA : urlB;
-		if (prev) URL.revokeObjectURL(prev);
-		if (slot === 'A') urlA = rawUrl;
-		else urlB = rawUrl;
-		staging = { slot, seq };
-	}
-
-	function onFrameLoad(slot: 'A' | 'B') {
-		if (!staging || staging.slot !== slot || staging.seq !== fetchSeq) return;
-		staging = null;
-		topIsA = slot === 'A';
-		// Both documents stay alive through the CSS crossfade; retire the old
-		// background URL afterwards. The equality guard protects against a
-		// newer preview having claimed the slot mid-fade.
-		const bgSlot = topIsA ? 'B' : 'A';
-		const bgUrl = bgSlot === 'A' ? urlA : urlB;
-		setTimeout(() => {
-			const current = bgSlot === 'A' ? urlA : urlB;
-			if (current && current === bgUrl) {
-				URL.revokeObjectURL(current);
-				if (bgSlot === 'A') urlA = null;
-				else urlB = null;
+	async function saveSectionsNow() {
+		if (saveState === 'saving') return;
+		saveState = 'saving';
+		saveError = null;
+		try {
+			const response = await fetch(`/api/letters/${letterId}`, {
+				method: 'PATCH',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ rawContent: currentContent() })
+			});
+			if (!response.ok) {
+				saveState = 'error';
+				saveError = 'Save failed — will retry when you keep typing.';
+				return;
 			}
-		}, CROSSFADE_MS + 50);
+			saveState = 'saved';
+		} catch {
+			saveState = 'error';
+			saveError = 'Save failed — will retry when you keep typing.';
+		}
 	}
 
 	function onEditorInput() {
-		if (debounceTimer) clearTimeout(debounceTimer);
-		debounceTimer = setTimeout(() => fetchPreview(currentContent()), 1000);
+		// Typing only schedules a save; the preview stays untouched until asked.
+		if (saveTimer) clearTimeout(saveTimer);
+		saveTimer = setTimeout(() => saveSectionsNow(), 1000);
 	}
 
 	async function updatePreviewNow() {
-		if (debounceTimer) clearTimeout(debounceTimer);
 		await fetchPreview(currentContent());
 	}
 
@@ -162,7 +131,6 @@
 	async function downloadPdf() {
 		downloading = true;
 		downloadError = null;
-		if (debounceTimer) clearTimeout(debounceTimer);
 		try {
 			const response = await fetch(`/api/letters/${letterId}/generate`, {
 				method: 'POST',
@@ -246,7 +214,14 @@
 			</p>
 		{/if}
 
-		<form method="post" action="?/saveSections" class="flex flex-col gap-4" use:enhance>
+		<div class="flex items-center justify-between gap-2">
+			<p class="text-sm text-muted-foreground" role="status" aria-live="polite">
+				{#if saveState === 'saving'}Saving…
+				{:else if saveState === 'saved'}Saved
+				{:else if saveState === 'error'}{saveError}{/if}
+			</p>
+		</div>
+		<div class="flex flex-col gap-4">
 			{#each sectionMeta as section (section.key)}
 				<div id="section-{section.key}" class="rounded-lg border border-gray-200 px-3 py-3">
 					<p class="font-medium">{section.prompt}</p>
@@ -281,10 +256,7 @@
 					</div>
 				</div>
 			{/each}
-			<div class="flex gap-2">
-				<Input class="flex-1" type="submit" value="Save sections" />
-			</div>
-		</form>
+		</div>
 
 		<div id="variables" class="rounded-lg bg-gray-300 px-3 py-3">
 			<h3 class="text-lg font-semibold">Variables</h3>
@@ -411,27 +383,9 @@
 		{#if previewHint}
 			<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
 		{/if}
-		{#if urlA || urlB}
-			<div class="relative h-[70vh] overflow-hidden rounded bg-[#e8e6e1]">
-				<iframe
-					src={urlA ? urlA + PDF_VIEWER_FRAGMENT : undefined}
-					title="Letter PDF preview"
-					class="absolute inset-0 h-full w-full rounded bg-white transition-opacity duration-200 {topIsA
-						? 'z-10 opacity-100'
-						: 'z-0 opacity-0'}"
-					aria-hidden={!topIsA}
-					onload={() => onFrameLoad('A')}
-				></iframe>
-				<iframe
-					src={urlB ? urlB + PDF_VIEWER_FRAGMENT : undefined}
-					title="Letter PDF preview"
-					class="absolute inset-0 h-full w-full rounded bg-white transition-opacity duration-200 {!topIsA
-						? 'z-10 opacity-100'
-						: 'z-0 opacity-0'}"
-					aria-hidden={topIsA}
-					onload={() => onFrameLoad('B')}
-				></iframe>
-			</div>
+		{#if previewUrl}
+			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full rounded bg-white"
+			></iframe>
 		{:else}
 			<p class="text-sm text-muted-foreground">
 				Nothing rendered yet. Write your sections, then press Update Preview.

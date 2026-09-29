@@ -6,7 +6,6 @@ import { requireUser } from '$lib/server/auth';
 
 type Block = components['schemas']['Block'];
 type Variable = components['schemas']['Variable'];
-type LetterGeneration = components['schemas']['LetterGenerationSchema'];
 
 /** Extracts the backend's error message ({ error: { message } }) when present. */
 function apiMessage(err: unknown): string | null {
@@ -23,47 +22,6 @@ function failWithApiError(action: string, err: unknown, fallback: string) {
 	const message = apiMessage(err) ?? fallback;
 	const status = /already exists/i.test(message) ? 409 : 400;
 	return fail(status, { action, message });
-}
-
-const DEFAULT_CONFIG: LetterGeneration['config'] = {
-	font: 'Helvetica',
-	fontSize: 12,
-	fontColor: '#000000',
-	backgroundColor: '#ffffff',
-	lineHeight: 1.5,
-	textDirection: 'ltr',
-	pageSize: 'A4',
-	marginLeft: 36,
-	marginRight: 36,
-	marginTop: 36,
-	marginBottom: 36
-};
-
-const ALIGNS = ['left', 'right', 'center', 'justify'] as const;
-type Align = (typeof ALIGNS)[number];
-
-function parseAlign(value: FormDataEntryValue | null): Align {
-	return ALIGNS.includes(value as Align) ? (value as Align) : 'left';
-}
-
-function buildContent(formData: FormData): LetterGeneration {
-	return {
-		config: DEFAULT_CONFIG,
-		sections: {
-			header: {
-				text: formData.get('headerText')?.toString() || null,
-				align: parseAlign(formData.get('headerAlign'))
-			},
-			body: {
-				text: formData.get('bodyText')?.toString() || null,
-				align: parseAlign(formData.get('bodyAlign'))
-			},
-			footer: {
-				text: formData.get('footerText')?.toString() || null,
-				align: parseAlign(formData.get('footerAlign'))
-			}
-		}
-	};
 }
 
 export const load: PageServerLoad = async ({ params, fetch, request }) => {
@@ -138,22 +96,5 @@ export const actions = {
 			return failWithApiError('newVariable', err, 'Failed to create variable.');
 		}
 		return { action: 'newVariable' as const, success: true, newVariable: data, message: '' };
-	},
-	saveSections: async ({ request, fetch, params }) => {
-		const cookie = request.headers.get('cookie');
-		await requireUser(fetch, cookie);
-		const formData = await request.formData();
-		const content = buildContent(formData);
-
-		const api = createApiClient(fetch, cookie);
-		const { error: err } = await api.PATCH('/api/letters/{id}', {
-			params: { path: { id: params.id } },
-			body: { rawContent: content }
-		});
-
-		if (err) {
-			return fail(400, { action: 'saveSections', message: 'Failed to save sections.' });
-		}
-		return { action: 'saveSections' as const, success: true, message: 'Sections saved.' };
 	}
 } satisfies Actions;
