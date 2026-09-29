@@ -45,6 +45,8 @@
 	let previewUrl = $state<string | null>(null);
 	let previewLoading = $state(false);
 	let previewHint = $state<string | null>('Press Update Preview to render the current sections.');
+	let lastPreviewAt = $state<string | null>(null);
+	let mobileTab = $state<'write' | 'preview'>('write');
 	let downloading = $state(false);
 	let downloadError = $state<string | null>(null);
 
@@ -98,6 +100,11 @@
 			const blob = await response.blob();
 			if (previewUrl) URL.revokeObjectURL(previewUrl);
 			previewUrl = URL.createObjectURL(blob);
+			lastPreviewAt = new Date().toLocaleTimeString('en-GB', {
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit'
+			});
 		} catch {
 			previewHint = 'Preview failed. Press Update Preview to retry.';
 		} finally {
@@ -381,7 +388,32 @@
 </script>
 
 <div class="container mx-auto my-8 flex flex-col gap-4 px-4 lg:flex-row">
-	<div id="edit-window" class="flex w-full flex-col gap-4 lg:w-1/2">
+	<div class="flex gap-2 lg:hidden" role="tablist" aria-label="Editor view">
+		<Button
+			variant={mobileTab === 'write' ? 'default' : 'outline'}
+			class="flex-1"
+			role="tab"
+			aria-selected={mobileTab === 'write'}
+			onclick={() => {
+				mobileTab = 'write';
+			}}>Write</Button
+		>
+		<Button
+			variant={mobileTab === 'preview' ? 'default' : 'outline'}
+			class="flex-1"
+			role="tab"
+			aria-selected={mobileTab === 'preview'}
+			onclick={() => {
+				mobileTab = 'preview';
+			}}>Preview</Button
+		>
+	</div>
+	<div
+		id="edit-window"
+		class="w-full flex-col gap-4 {mobileTab === 'write' ? 'flex' : 'hidden'} lg:flex lg:w-1/2"
+		role="tabpanel"
+		aria-label="Write"
+	>
 		<div>
 			<h2 class="text-2xl font-thin">{data.letter.title}</h2>
 			{#if data.letter.description}
@@ -660,8 +692,13 @@
 
 	<div
 		id="preview"
-		class="w-full rounded-lg border border-gray-200 bg-[#eceae4] p-4 shadow-sm lg:sticky lg:top-4 lg:w-1/2 lg:self-start"
+		class="w-full rounded-lg border border-gray-200 bg-[#eceae4] p-4 shadow-sm {mobileTab ===
+		'preview'
+			? 'block'
+			: 'hidden'} lg:sticky lg:top-4 lg:block lg:w-1/2 lg:self-start"
 		aria-busy={previewLoading}
+		role="tabpanel"
+		aria-label="Preview"
 	>
 		<div class="mb-3 flex items-center justify-between gap-2">
 			<h3 class="text-lg font-semibold">Preview</h3>
@@ -674,13 +711,19 @@
 				>
 					{previewLoading ? 'Rendering…' : 'Update Preview'}
 				</Button>
-				<Button type="button" disabled={downloading} onclick={downloadPdf}>
+				<Button
+					type="button"
+					disabled={downloading}
+					aria-describedby={downloadError ? 'download-error' : undefined}
+					onclick={downloadPdf}
+				>
 					{downloading ? 'Generating…' : 'Download'}
 				</Button>
 			</div>
 		</div>
 		{#if downloadError}
 			<p
+				id="download-error"
 				class="mb-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
 				role="alert"
 			>
@@ -689,6 +732,11 @@
 		{/if}
 		{#if previewHint}
 			<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
+		{/if}
+		{#if lastPreviewAt && previewUrl}
+			<p class="mb-2 text-xs text-muted-foreground" role="status" aria-live="polite">
+				Preview updated at {lastPreviewAt}.
+			</p>
 		{/if}
 		{#if previewUrl}
 			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full rounded bg-white"

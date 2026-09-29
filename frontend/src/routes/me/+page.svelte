@@ -101,11 +101,17 @@
 		<h2 class="text-4xl font-thin">{greeting}, <span class="">{user.name}</span></h2>
 		<small class="text-lg font-light text-gray-600">{second_greeting}</small>
 	</hgroup>
+	<nav class="flex gap-4 text-sm lg:hidden" aria-label="Sections">
+		<a href="#letters-panel" class="underline">Letters</a>
+		<a href="#blocks-panel" class="underline">Blocks</a>
+		<a href="#variables-panel" class="underline">Variables</a>
+	</nav>
 
 	<div>
 		<div class="grid w-full grid-cols-1 gap-10 lg:grid-cols-3">
 			<div
-				class="flex flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm lg:col-span-2"
+				id="letters-panel"
+				class="flex scroll-mt-4 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm lg:col-span-2"
 			>
 				<h3 class="text-lg font-semibold">Letters</h3>
 				<div>
@@ -163,7 +169,8 @@
 			</div>
 			<div class="flex flex-col gap-10">
 				<div
-					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
+					id="blocks-panel"
+					class="flex flex-1 scroll-mt-4 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
 				>
 					<h3 class="text-lg font-semibold">Blocks</h3>
 					<div>
@@ -222,7 +229,8 @@
 					</div>
 				</div>
 				<div
-					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
+					id="variables-panel"
+					class="flex flex-1 scroll-mt-4 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
 				>
 					<h3 class="text-lg font-semibold">Variables</h3>
 					<div>
