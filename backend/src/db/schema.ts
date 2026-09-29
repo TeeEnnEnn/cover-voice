@@ -152,10 +152,10 @@ export const blockVariableTable = pgTable(
 	{
 		blockId: text('block_id')
 			.notNull()
-			.references(() => blockTable.id, { onDelete: 'cascade' }),
+			.references(() => blockTable.id, { onDelete: 'restrict' }),
 		variableId: text('variable_id')
 			.notNull()
-			.references(() => variableTable.id, { onDelete: 'cascade' }),
+			.references(() => variableTable.id, { onDelete: 'restrict' }),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' })
@@ -174,10 +174,10 @@ export const letterBlockTable = pgTable(
 	{
 		letterId: text('letter_id')
 			.notNull()
-			.references(() => letterTable.id, { onDelete: 'cascade' }),
+			.references(() => letterTable.id, { onDelete: 'restrict' }),
 		blockId: text('block_id')
 			.notNull()
-			.references(() => blockTable.id, { onDelete: 'cascade' }),
+			.references(() => blockTable.id, { onDelete: 'restrict' }),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' })
@@ -197,10 +197,10 @@ export const letterVariableTable = pgTable(
 	{
 		letterId: text('letter_id')
 			.notNull()
-			.references(() => letterTable.id, { onDelete: 'cascade' }),
+			.references(() => letterTable.id, { onDelete: 'restrict' }),
 		variableId: text('variable_id')
 			.notNull()
-			.references(() => variableTable.id, { onDelete: 'cascade' }),
+			.references(() => variableTable.id, { onDelete: 'restrict' }),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' })
