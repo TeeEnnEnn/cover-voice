@@ -1,7 +1,10 @@
 name: Deploy Production
 
+# Deploys only run after CI passes on master, so a red build can never ship.
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [master]
 
 concurrency:
@@ -10,10 +13,13 @@ concurrency:
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -21,8 +27,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          script_stop: false
-          debug: true
+          script_stop: true
           script: |
             set -ex
             cd ~/app-prod
@@ -49,7 +54,10 @@ jobs:
 
             if echo "$RUNNING_SERVICES" | grep -q "^db$"; then DB_RUNNING=yes; else DB_RUNNING=no; fi
             if [ "$DB_RUNNING" = "yes" ]; then
-              docker compose -p "$PROJECT" exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/backups/pre-deploy-$(date +%Y%m%d%H%M%S).sql || true
+              # Fail fast if the dump fails: never reset code on top of an
+              # unprotected database. Dumps are local-only (see backups note
+              # below); offsite copy is a manual step for now.
+              docker compose -p "$PROJECT" exec -T db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > ~/backups/pre-deploy-$(date +%Y%m%d%H%M%S).sql
             else
               echo "Database container not running yet — skipping pre-deploy dump."
             fi
@@ -64,18 +72,22 @@ jobs:
             # Rebuild and start containers
             docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans
 
-            # Health check loop
+            # Health check loop against the DB-aware endpoint (rebuilds plus
+            # migrations can take a while, hence the generous window).
             HEALTHY=0
-            for i in $(seq 1 10); do
-              if curl -fs http://localhost/ > /dev/null; then
+            for i in $(seq 1 20); do
+              if curl -fs http://localhost/api/health > /dev/null; then
                 HEALTHY=1
                 break
               fi
-              sleep 3
+              sleep 6
             done
 
             if [ "$HEALTHY" -ne 1 ]; then
               echo "Health check failed - rolling back to $PREVIOUS_SHA"
+              # Rollback is code-only: migrations are forward-only, so a failed
+              # deploy that already migrated needs the pre-deploy dump above
+              # restored manually with psql.
               if [ "$PREVIOUS_SHA" != "none" ]; then
                 git reset --hard "$PREVIOUS_SHA"
                 docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans

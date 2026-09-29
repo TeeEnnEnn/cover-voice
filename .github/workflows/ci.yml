@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+  push:
+    branches: [master]
 
 jobs:
   backend:
@@ -104,3 +106,28 @@ jobs:
         working-directory: frontend
       - name: Fail if generated artifacts changed
         run: git diff --exit-code -- backend/openapi.json frontend/src/lib/api/schema.d.ts
+
+  build:
+    name: Build and smoke test images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose build
+        env:
+          BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+          BETTER_AUTH_URL: http://localhost
+          DOMAIN: http://localhost
+      - run: docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm run build
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend

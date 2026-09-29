@@ -4,6 +4,10 @@
 
 {$DOMAIN:http://localhost} {
 	encode zstd gzip
+	log {
+		output stdout
+		format json
+	}
 
 	handle /api/* {
 		reverse_proxy backend:3001

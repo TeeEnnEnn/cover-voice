@@ -18,7 +18,21 @@ const port = env.data.PORT;
 const logger = pino({ level: env.data.LOG_LEVEL ?? 'info' });
 
 async function main() {
-	await migrate(db, { migrationsFolder: './drizzle' });
+	// Retry migrations with backoff: on (re)deploy the database may still be
+	// starting, and a single failed attempt would otherwise crashloop the
+	// container before Postgres is ready.
+	const attempts = 5;
+	for (let attempt = 1; ; attempt++) {
+		try {
+			await migrate(db, { migrationsFolder: './drizzle' });
+			break;
+		} catch (error) {
+			if (attempt >= attempts) throw error;
+			const delayMs = 2 ** attempt * 1000;
+			logger.warn({ attempt, attempts, delayMs }, 'Migration failed, retrying');
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+		}
+	}
 	const app = createApp();
 	const server = app.listen(port, () => {
 		logger.info({ port }, 'Backend listening');
