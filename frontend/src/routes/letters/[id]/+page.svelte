@@ -453,33 +453,28 @@
 	let variablesOpen = $state(true);
 </script>
 
-<div class="container mx-auto my-8 flex flex-col gap-4 px-4 lg:flex-row">
-	<div class="flex gap-2 lg:hidden" role="tablist" aria-label="Editor view">
-		<Button
-			variant={mobileTab === 'write' ? 'default' : 'outline'}
-			class="flex-1"
-			role="tab"
-			aria-selected={mobileTab === 'write'}
-			onclick={() => {
-				mobileTab = 'write';
-			}}>Write</Button
-		>
-		<Button
-			variant={mobileTab === 'preview' ? 'default' : 'outline'}
-			class="flex-1"
-			role="tab"
-			aria-selected={mobileTab === 'preview'}
-			onclick={() => {
-				mobileTab = 'preview';
-			}}>Preview</Button
-		>
-	</div>
-	<div
-		id="edit-window"
-		class="w-full flex-col gap-4 {mobileTab === 'write' ? 'flex' : 'hidden'} lg:flex lg:w-1/2"
-		role="tabpanel"
-		aria-label="Write"
-	>
+<div class="container mx-auto my-8 flex flex-col gap-8">
+	<header class="px-4 flex flex-col gap-4">
+		<div class="flex gap-2 lg:hidden" role="tablist" aria-label="Editor view">
+			<Button
+				variant={mobileTab === 'write' ? 'default' : 'outline'}
+				class="flex-1"
+				role="tab"
+				aria-selected={mobileTab === 'write'}
+				onclick={() => {
+					mobileTab = 'write';
+				}}>Write</Button
+			>
+			<Button
+				variant={mobileTab === 'preview' ? 'default' : 'outline'}
+				class="flex-1"
+				role="tab"
+				aria-selected={mobileTab === 'preview'}
+				onclick={() => {
+					mobileTab = 'preview';
+				}}>Preview</Button
+			>
+		</div>
 		<div>
 			<h2 class="text-2xl font-semibold">{data.letter.title}</h2>
 			{#if data.letter.description}
@@ -494,492 +489,504 @@
 				{:else if saveState === 'error'}{saveError}{/if}
 			</p>
 		</div>
-		<div class="flex flex-col gap-4">
-			{#each sectionMeta as section (section.key)}
-				{@const refs = refsIn(textFor(section.key))}
-				<div id="section-{section.key}" class=" border border-border bg-card px-3 py-3 shadow-sm">
-					<div class="flex items-center justify-between gap-2">
-						<p class="font-medium">{section.prompt}</p>
-						{#if isDirty(section.key)}
-							<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span>
-						{/if}
-					</div>
-					<div class="mt-2 flex flex-col gap-2">
-						<Label for="{section.key}Text">{section.title} text</Label>
-						<div class="relative" data-field-wrap={section.key}>
-							<Textarea
-								id="{section.key}Text"
-								name="{section.key}Text"
-								value={textFor(section.key)}
-								oninput={(e) => {
-									setText(section.key, e.currentTarget.value);
-									onEditorInput();
-									updateMenu(e.currentTarget, section.key);
-								}}
-								onkeydown={(e) => onFieldKeydown(e, e.currentTarget, section.key)}
-								onblur={() => {
-									setTimeout(() => {
-										menu = null;
-									}, 150);
-								}}
-								placeholder={'Use {%block%} and {{variable}} references'}
-								rows={4}
-							/>
-							{#if menu && menu.key === section.key && menuItems.length > 0}
-								<ul
-									role="listbox"
-									aria-label="{menu.kind === 'block' ? 'Block' : 'Variable'} suggestions"
-									class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
-									style="top: {menuPos.top}px; left: {menuPos.left}px;"
+	</header>
+
+	<div class="flex flex-col gap-4 px-4 lg:flex-row">
+		<div
+			id="edit-window"
+			class="w-full flex-col gap-4 {mobileTab === 'write' ? 'flex' : 'hidden'} lg:flex lg:w-1/2"
+			role="tabpanel"
+			aria-label="Write"
+		>
+			<div class="flex flex-col gap-4">
+				{#each sectionMeta as section (section.key)}
+					{@const refs = refsIn(textFor(section.key))}
+					<div id="section-{section.key}" class=" border border-border bg-card px-3 py-3 shadow-sm">
+						<div class="flex items-center justify-between gap-2">
+							<p class="font-medium">{section.prompt}</p>
+							{#if isDirty(section.key)}
+								<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span
 								>
-									{#each menuItems as item, i (item.id)}
-										<li role="option" aria-selected={i === menu.index}>
-											<button
-												type="button"
-												class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm {i ===
-												menu.index
-													? 'bg-accent'
-													: ''}"
-												onmousedown={(e) => {
-													e.preventDefault();
-													acceptSuggestion(item.name);
-												}}
-												onmouseenter={() => {
-													if (menu) menu.index = i;
-												}}
-											>
-												<code
-													>{menu.kind === 'block' ? `{%${item.name}%}` : `{{${item.name}}}`}</code
-												>
-												<span class="truncate text-xs text-muted-foreground">{item.value}</span>
-											</button>
-										</li>
-									{/each}
-								</ul>
 							{/if}
 						</div>
-						{#if refs.length > 0}
-							<div class="flex flex-wrap gap-1.5" aria-label="References used in this section">
-								{#each refs as ref (ref.kind + ref.name)}
-									<button
-										type="button"
-										title={ref.known
-											? `Jump to ${ref.kind} "${ref.name}"`
-											: `"${ref.name}" does not exist yet — preview will fail`}
-										onclick={() => jumpToPanel(ref.kind)}
-										class="rounded-full border px-2 py-0.5 text-xs {ref.known
-											? 'border-border bg-muted text-muted-foreground hover:bg-accent'
-											: 'border-red-300 bg-red-50 text-red-700'}"
+						<div class="mt-2 flex flex-col gap-2">
+							<Label for="{section.key}Text">{section.title} text</Label>
+							<div class="relative" data-field-wrap={section.key}>
+								<Textarea
+									id="{section.key}Text"
+									name="{section.key}Text"
+									value={textFor(section.key)}
+									oninput={(e) => {
+										setText(section.key, e.currentTarget.value);
+										onEditorInput();
+										updateMenu(e.currentTarget, section.key);
+									}}
+									onkeydown={(e) => onFieldKeydown(e, e.currentTarget, section.key)}
+									onblur={() => {
+										setTimeout(() => {
+											menu = null;
+										}, 150);
+									}}
+									placeholder={'Use {%block%} and {{variable}} references'}
+									rows={4}
+								/>
+								{#if menu && menu.key === section.key && menuItems.length > 0}
+									<ul
+										role="listbox"
+										aria-label="{menu.kind === 'block' ? 'Block' : 'Variable'} suggestions"
+										class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
+										style="top: {menuPos.top}px; left: {menuPos.left}px;"
 									>
-										{ref.kind === 'block' ? `{%${ref.name}%}` : `{{${ref.name}}}`}
-									</button>
-								{/each}
+										{#each menuItems as item, i (item.id)}
+											<li role="option" aria-selected={i === menu.index}>
+												<button
+													type="button"
+													class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm {i ===
+													menu.index
+														? 'bg-accent'
+														: ''}"
+													onmousedown={(e) => {
+														e.preventDefault();
+														acceptSuggestion(item.name);
+													}}
+													onmouseenter={() => {
+														if (menu) menu.index = i;
+													}}
+												>
+													<code
+														>{menu.kind === 'block' ? `{%${item.name}%}` : `{{${item.name}}}`}</code
+													>
+													<span class="truncate text-xs text-muted-foreground">{item.value}</span>
+												</button>
+											</li>
+										{/each}
+									</ul>
+								{/if}
 							</div>
+							{#if refs.length > 0}
+								<div class="flex flex-wrap gap-1.5" aria-label="References used in this section">
+									{#each refs as ref (ref.kind + ref.name)}
+										<button
+											type="button"
+											title={ref.known
+												? `Jump to ${ref.kind} "${ref.name}"`
+												: `"${ref.name}" does not exist yet — preview will fail`}
+											onclick={() => jumpToPanel(ref.kind)}
+											class="rounded-full border px-2 py-0.5 text-xs {ref.known
+												? 'border-border bg-muted text-muted-foreground hover:bg-accent'
+												: 'border-red-300 bg-red-50 text-red-700'}"
+										>
+											{ref.kind === 'block' ? `{%${ref.name}%}` : `{{${ref.name}}}`}
+										</button>
+									{/each}
+								</div>
+							{/if}
+							<Label for="{section.key}Align">{section.title} alignment</Label>
+							<select
+								id="{section.key}Align"
+								name="{section.key}Align"
+								value={alignFor(section.key)}
+								onchange={(e) => {
+									setAlign(section.key, e.currentTarget.value as Align);
+									onEditorInput();
+								}}
+								class=" border border-border bg-card px-2 py-1"
+							>
+								{#each aligns as align (align)}
+									<option value={align}>{align}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			<div id="page-style" class=" border border-border bg-card px-3 py-3 shadow-sm">
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="text-lg font-semibold">Page style</h3>
+					<div class="flex items-center gap-2">
+						{#if configDirty}
+							<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span>
 						{/if}
-						<Label for="{section.key}Align">{section.title} alignment</Label>
-						<select
-							id="{section.key}Align"
-							name="{section.key}Align"
-							value={alignFor(section.key)}
-							onchange={(e) => {
-								setAlign(section.key, e.currentTarget.value as Align);
-								onEditorInput();
+						<Button
+							variant="outline"
+							type="button"
+							aria-expanded={styleOpen}
+							aria-controls="page-style-body"
+							onclick={() => {
+								styleOpen = !styleOpen;
 							}}
-							class=" border border-border bg-card px-2 py-1"
 						>
-							{#each aligns as align (align)}
-								<option value={align}>{align}</option>
-							{/each}
-						</select>
+							{styleOpen ? 'Hide' : 'Show'}
+						</Button>
 					</div>
 				</div>
-			{/each}
-		</div>
+				{#if styleOpen}
+					<div id="page-style-body" transition:slide class="mt-2 flex flex-col gap-3">
+						<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+							<div class="flex flex-col gap-1">
+								<Label for="pageFont">Font</Label>
+								<select
+									id="pageFont"
+									value={pageConfig.font}
+									onchange={(e) => {
+										pageConfig.font = e.currentTarget.value as PageFont;
+										onEditorInput();
+									}}
+									class=" border border-border bg-card px-2 py-1"
+								>
+									{#each pageFonts as font (font)}
+										<option value={font}>{font}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="flex flex-col gap-1">
+								<Label for="pageSize">Page size</Label>
+								<select
+									id="pageSize"
+									value={pageConfig.pageSize}
+									onchange={(e) => {
+										pageConfig.pageSize = e.currentTarget.value as PageSizeOption;
+										onEditorInput();
+									}}
+									class=" border border-border bg-card px-2 py-1"
+								>
+									{#each pageSizes as size (size)}
+										<option value={size}>{size}</option>
+									{/each}
+								</select>
+							</div>
+							<div class="flex flex-col gap-1">
+								<Label for="pageFontSize">Font size (pt)</Label>
+								<Input
+									id="pageFontSize"
+									type="number"
+									min={1}
+									max={100}
+									step={1}
+									value={pageConfig.fontSize}
+									oninput={(e) =>
+										setConfigNumber('fontSize', e.currentTarget.valueAsNumber, 1, 100, 0)}
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<Label for="pageLineHeight">Line height (×)</Label>
+								<Input
+									id="pageLineHeight"
+									type="number"
+									min={0.5}
+									max={10}
+									step={0.1}
+									value={pageConfig.lineHeight}
+									oninput={(e) =>
+										setConfigNumber('lineHeight', e.currentTarget.valueAsNumber, 0.5, 10, 1)}
+								/>
+							</div>
+							<div class="flex flex-col gap-1">
+								<Label for="pageFontColor">Text color</Label>
+								<div class="flex gap-2">
+									<input
+										id="pageFontColor"
+										type="color"
+										value={pageConfig.fontColor}
+										aria-label="Text color picker"
+										oninput={(e) => {
+											pageConfig.fontColor = e.currentTarget.value;
+											onEditorInput();
+										}}
+										class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
+									/>
+									<Input
+										id="pageFontColorHex"
+										type="text"
+										value={pageConfig.fontColor}
+										pattern="#[0-9A-Fa-f]{6}"
+										maxlength={7}
+										spellcheck={false}
+										aria-label="Text color hex value"
+										oninput={(e) => {
+											const v = e.currentTarget.value;
+											if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+												pageConfig.fontColor = v;
+												onEditorInput();
+											}
+										}}
+									/>
+								</div>
+							</div>
+							<div class="flex flex-col gap-1">
+								<Label for="pageBackgroundColor">Background color</Label>
+								<div class="flex gap-2">
+									<input
+										id="pageBackgroundColor"
+										type="color"
+										value={pageConfig.backgroundColor}
+										aria-label="Background color picker"
+										oninput={(e) => {
+											pageConfig.backgroundColor = e.currentTarget.value;
+											onEditorInput();
+										}}
+										class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
+									/>
+									<Input
+										id="pageBackgroundColorHex"
+										type="text"
+										value={pageConfig.backgroundColor}
+										pattern="#[0-9A-Fa-f]{6}"
+										maxlength={7}
+										spellcheck={false}
+										aria-label="Background color hex value"
+										oninput={(e) => {
+											const v = e.currentTarget.value;
+											if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+												pageConfig.backgroundColor = v;
+												onEditorInput();
+											}
+										}}
+									/>
+								</div>
+							</div>
+						</div>
+						<div class="flex flex-col gap-1">
+							<p class="text-sm font-medium">Margins (pt)</p>
+							<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+								{#each marginFields as field (field.key)}
+									<div class="flex flex-col gap-1">
+										<Label for="pageMargin-{field.key}">{field.label}</Label>
+										<Input
+											id="pageMargin-{field.key}"
+											type="number"
+											min={0}
+											max={200}
+											step={1}
+											value={pageConfig[field.key]}
+											oninput={(e) =>
+												setConfigNumber(field.key, e.currentTarget.valueAsNumber, 0, 200, 0)}
+										/>
+									</div>
+								{/each}
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
 
-		<div id="page-style" class=" border border-border bg-card px-3 py-3 shadow-sm">
-			<div class="flex items-center justify-between gap-2">
-				<h3 class="text-lg font-semibold">Page style</h3>
-				<div class="flex items-center gap-2">
-					{#if configDirty}
-						<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span>
-					{/if}
+			<div id="variables" class=" border border-border bg-card px-3 py-3 shadow-sm">
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="text-lg font-semibold">Variables</h3>
 					<Button
 						variant="outline"
 						type="button"
-						aria-expanded={styleOpen}
-						aria-controls="page-style-body"
+						aria-expanded={variablesOpen}
+						aria-controls="variables-body"
 						onclick={() => {
-							styleOpen = !styleOpen;
+							variablesOpen = !variablesOpen;
 						}}
 					>
-						{styleOpen ? 'Hide' : 'Show'}
+						{variablesOpen ? 'Hide' : 'Show'}
 					</Button>
 				</div>
-			</div>
-			{#if styleOpen}
-				<div id="page-style-body" transition:slide class="mt-2 flex flex-col gap-3">
-					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						<div class="flex flex-col gap-1">
-							<Label for="pageFont">Font</Label>
-							<select
-								id="pageFont"
-								value={pageConfig.font}
-								onchange={(e) => {
-									pageConfig.font = e.currentTarget.value as PageFont;
-									onEditorInput();
-								}}
-								class=" border border-border bg-card px-2 py-1"
-							>
-								{#each pageFonts as font (font)}
-									<option value={font}>{font}</option>
+				{#if variablesOpen}
+					<div id="variables-body" transition:slide>
+						{#if data.variableError}
+							<p class="text-sm text-red-600">{data.variableError}</p>
+						{:else}
+							<ul class="mb-2 flex flex-col gap-1">
+								{#each data.variables as variable (variable.id)}
+									<li class="text-sm">
+										<code>{`{{${variable.name}}}`}</code>
+										<span class="text-muted-foreground">= {variable.value}</span>
+									</li>
+								{:else}
+									<li class="text-sm text-muted-foreground">
+										No variables yet.
+										<button
+											type="button"
+											class="underline"
+											onclick={() => {
+												settingNewVariable = true;
+											}}>Create one</button
+										>.
+									</li>
 								{/each}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1">
-							<Label for="pageSize">Page size</Label>
-							<select
-								id="pageSize"
-								value={pageConfig.pageSize}
-								onchange={(e) => {
-									pageConfig.pageSize = e.currentTarget.value as PageSizeOption;
-									onEditorInput();
-								}}
-								class=" border border-border bg-card px-2 py-1"
+							</ul>
+						{/if}
+						<Button
+							variant={settingNewVariable ? 'destructive' : 'default'}
+							onclick={() => {
+								settingNewVariable = !settingNewVariable;
+							}}
+						>
+							{settingNewVariable ? 'Cancel' : 'New Variable'}
+						</Button>
+						{#if settingNewVariable}
+							<form
+								method="POST"
+								action="?/newVariable"
+								transition:slide
+								class="mt-2 flex flex-col gap-4"
+								use:enhance
 							>
-								{#each pageSizes as size (size)}
-									<option value={size}>{size}</option>
-								{/each}
-							</select>
-						</div>
-						<div class="flex flex-col gap-1">
-							<Label for="pageFontSize">Font size (pt)</Label>
-							<Input
-								id="pageFontSize"
-								type="number"
-								min={1}
-								max={100}
-								step={1}
-								value={pageConfig.fontSize}
-								oninput={(e) =>
-									setConfigNumber('fontSize', e.currentTarget.valueAsNumber, 1, 100, 0)}
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							<Label for="pageLineHeight">Line height (×)</Label>
-							<Input
-								id="pageLineHeight"
-								type="number"
-								min={0.5}
-								max={10}
-								step={0.1}
-								value={pageConfig.lineHeight}
-								oninput={(e) =>
-									setConfigNumber('lineHeight', e.currentTarget.valueAsNumber, 0.5, 10, 1)}
-							/>
-						</div>
-						<div class="flex flex-col gap-1">
-							<Label for="pageFontColor">Text color</Label>
-							<div class="flex gap-2">
-								<input
-									id="pageFontColor"
-									type="color"
-									value={pageConfig.fontColor}
-									aria-label="Text color picker"
-									oninput={(e) => {
-										pageConfig.fontColor = e.currentTarget.value;
-										onEditorInput();
-									}}
-									class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
-								/>
-								<Input
-									id="pageFontColorHex"
-									type="text"
-									value={pageConfig.fontColor}
-									pattern="#[0-9A-Fa-f]{6}"
-									maxlength={7}
-									spellcheck={false}
-									aria-label="Text color hex value"
-									oninput={(e) => {
-										const v = e.currentTarget.value;
-										if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
-											pageConfig.fontColor = v;
-											onEditorInput();
-										}
-									}}
-								/>
-							</div>
-						</div>
-						<div class="flex flex-col gap-1">
-							<Label for="pageBackgroundColor">Background color</Label>
-							<div class="flex gap-2">
-								<input
-									id="pageBackgroundColor"
-									type="color"
-									value={pageConfig.backgroundColor}
-									aria-label="Background color picker"
-									oninput={(e) => {
-										pageConfig.backgroundColor = e.currentTarget.value;
-										onEditorInput();
-									}}
-									class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
-								/>
-								<Input
-									id="pageBackgroundColorHex"
-									type="text"
-									value={pageConfig.backgroundColor}
-									pattern="#[0-9A-Fa-f]{6}"
-									maxlength={7}
-									spellcheck={false}
-									aria-label="Background color hex value"
-									oninput={(e) => {
-										const v = e.currentTarget.value;
-										if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
-											pageConfig.backgroundColor = v;
-											onEditorInput();
-										}
-									}}
-								/>
-							</div>
-						</div>
-					</div>
-					<div class="flex flex-col gap-1">
-						<p class="text-sm font-medium">Margins (pt)</p>
-						<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-							{#each marginFields as field (field.key)}
-								<div class="flex flex-col gap-1">
-									<Label for="pageMargin-{field.key}">{field.label}</Label>
+								<div>
+									<Label for="variableName">Variable Name</Label>
 									<Input
-										id="pageMargin-{field.key}"
-										type="number"
-										min={0}
-										max={200}
-										step={1}
-										value={pageConfig[field.key]}
-										oninput={(e) =>
-											setConfigNumber(field.key, e.currentTarget.valueAsNumber, 0, 200, 0)}
+										id="variableName"
+										name="variableName"
+										type="text"
+										placeholder="name"
+										required
 									/>
 								</div>
-							{/each}
-						</div>
+								<div>
+									<Label for="variableValue">Variable Value</Label>
+									<Input
+										id="variableValue"
+										name="variableValue"
+										type="text"
+										placeholder="value"
+										required
+									/>
+								</div>
+								<Button type="submit" class="w-full">Add</Button>
+							</form>
+						{/if}
 					</div>
-				</div>
-			{/if}
-		</div>
-
-		<div id="variables" class=" border border-border bg-card px-3 py-3 shadow-sm">
-			<div class="flex items-center justify-between gap-2">
-				<h3 class="text-lg font-semibold">Variables</h3>
-				<Button
-					variant="outline"
-					type="button"
-					aria-expanded={variablesOpen}
-					aria-controls="variables-body"
-					onclick={() => {
-						variablesOpen = !variablesOpen;
-					}}
-				>
-					{variablesOpen ? 'Hide' : 'Show'}
-				</Button>
+				{/if}
 			</div>
-			{#if variablesOpen}
-				<div id="variables-body" transition:slide>
-					{#if data.variableError}
-						<p class="text-sm text-red-600">{data.variableError}</p>
-					{:else}
-						<ul class="mb-2 flex flex-col gap-1">
-							{#each data.variables as variable (variable.id)}
-								<li class="text-sm">
-									<code>{`{{${variable.name}}}`}</code>
-									<span class="text-muted-foreground">= {variable.value}</span>
-								</li>
-							{:else}
-								<li class="text-sm text-muted-foreground">
-									No variables yet.
-									<button
-										type="button"
-										class="underline"
-										onclick={() => {
-											settingNewVariable = true;
-										}}>Create one</button
-									>.
-								</li>
-							{/each}
-						</ul>
-					{/if}
+
+			<div id="blocks" class=" border border-border bg-card px-3 py-3 shadow-sm">
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="text-lg font-semibold">Blocks</h3>
 					<Button
-						variant={settingNewVariable ? 'destructive' : 'default'}
+						variant="outline"
+						type="button"
+						aria-expanded={blocksOpen}
+						aria-controls="blocks-body"
 						onclick={() => {
-							settingNewVariable = !settingNewVariable;
+							blocksOpen = !blocksOpen;
 						}}
 					>
-						{settingNewVariable ? 'Cancel' : 'New Variable'}
+						{blocksOpen ? 'Hide' : 'Show'}
 					</Button>
-					{#if settingNewVariable}
-						<form
-							method="POST"
-							action="?/newVariable"
-							transition:slide
-							class="mt-2 flex flex-col gap-4"
-							use:enhance
-						>
-							<div>
-								<Label for="variableName">Variable Name</Label>
-								<Input
-									id="variableName"
-									name="variableName"
-									type="text"
-									placeholder="name"
-									required
-								/>
-							</div>
-							<div>
-								<Label for="variableValue">Variable Value</Label>
-								<Input
-									id="variableValue"
-									name="variableValue"
-									type="text"
-									placeholder="value"
-									required
-								/>
-							</div>
-							<Button type="submit" class="w-full">Add</Button>
-						</form>
-					{/if}
 				</div>
-			{/if}
+				{#if blocksOpen}
+					<div id="blocks-body" transition:slide>
+						{#if data.blockError}
+							<p class="text-sm text-red-600">{data.blockError}</p>
+						{:else}
+							<ul class="mb-2 flex flex-col gap-1">
+								{#each data.blocks as block (block.id)}
+									<li class="text-sm">
+										<code>{`{%${block.name}%}`}</code>
+										<span class="text-muted-foreground">= {block.value}</span>
+									</li>
+								{:else}
+									<li class="text-sm text-muted-foreground">
+										No blocks yet.
+										<button
+											type="button"
+											class="underline"
+											onclick={() => {
+												settingNewBlock = true;
+											}}>Create one</button
+										>.
+									</li>
+								{/each}
+							</ul>
+						{/if}
+						<Button
+							variant={settingNewBlock ? 'destructive' : 'default'}
+							onclick={() => {
+								settingNewBlock = !settingNewBlock;
+							}}
+						>
+							{settingNewBlock ? 'Cancel' : 'New Block'}
+						</Button>
+						{#if settingNewBlock}
+							<form
+								method="POST"
+								action="?/newBlock"
+								transition:slide
+								class="mt-2 flex flex-col gap-4"
+								use:enhance
+							>
+								<div>
+									<Label for="blockName">Block Name</Label>
+									<Input id="blockName" name="blockName" type="text" placeholder="name" required />
+								</div>
+								<div>
+									<Label for="blockValue">Block Value</Label>
+									<VariableAutocompleteTextarea
+										id="blockValue"
+										name="blockValue"
+										placeholder="value"
+										required
+										suggestions={data.variables}
+									/>
+								</div>
+								<Button type="submit" class="w-full">Add</Button>
+							</form>
+						{/if}
+					</div>
+				{/if}
+			</div>
 		</div>
 
-		<div id="blocks" class=" border border-border bg-card px-3 py-3 shadow-sm">
-			<div class="flex items-center justify-between gap-2">
-				<h3 class="text-lg font-semibold">Blocks</h3>
-				<Button
-					variant="outline"
-					type="button"
-					aria-expanded={blocksOpen}
-					aria-controls="blocks-body"
-					onclick={() => {
-						blocksOpen = !blocksOpen;
-					}}
-				>
-					{blocksOpen ? 'Hide' : 'Show'}
-				</Button>
-			</div>
-			{#if blocksOpen}
-				<div id="blocks-body" transition:slide>
-					{#if data.blockError}
-						<p class="text-sm text-red-600">{data.blockError}</p>
-					{:else}
-						<ul class="mb-2 flex flex-col gap-1">
-							{#each data.blocks as block (block.id)}
-								<li class="text-sm">
-									<code>{`{%${block.name}%}`}</code>
-									<span class="text-muted-foreground">= {block.value}</span>
-								</li>
-							{:else}
-								<li class="text-sm text-muted-foreground">
-									No blocks yet.
-									<button
-										type="button"
-										class="underline"
-										onclick={() => {
-											settingNewBlock = true;
-										}}>Create one</button
-									>.
-								</li>
-							{/each}
-						</ul>
-					{/if}
+		<div
+			id="preview"
+			class="w-full border border-border bg-card p-4 shadow-sm {mobileTab === 'preview'
+				? 'block'
+				: 'hidden'} lg:sticky lg:top-4 lg:block lg:w-1/2 lg:self-start"
+			aria-busy={previewLoading}
+			role="tabpanel"
+			aria-label="Preview"
+		>
+			<div class="mb-3 flex items-center justify-between gap-2">
+				<h3 class="text-lg font-semibold">Preview</h3>
+				<div class="flex gap-2">
 					<Button
-						variant={settingNewBlock ? 'destructive' : 'default'}
-						onclick={() => {
-							settingNewBlock = !settingNewBlock;
-						}}
+						variant="secondary"
+						type="button"
+						disabled={previewLoading}
+						onclick={updatePreviewNow}
 					>
-						{settingNewBlock ? 'Cancel' : 'New Block'}
+						{previewLoading ? 'Rendering…' : 'Update Preview'}
 					</Button>
-					{#if settingNewBlock}
-						<form
-							method="POST"
-							action="?/newBlock"
-							transition:slide
-							class="mt-2 flex flex-col gap-4"
-							use:enhance
-						>
-							<div>
-								<Label for="blockName">Block Name</Label>
-								<Input id="blockName" name="blockName" type="text" placeholder="name" required />
-							</div>
-							<div>
-								<Label for="blockValue">Block Value</Label>
-								<VariableAutocompleteTextarea
-									id="blockValue"
-									name="blockValue"
-									placeholder="value"
-									required
-									suggestions={data.variables}
-								/>
-							</div>
-							<Button type="submit" class="w-full">Add</Button>
-						</form>
-					{/if}
+					<Button
+						type="button"
+						disabled={downloading}
+						aria-describedby={downloadError ? 'download-error' : undefined}
+						onclick={downloadPdf}
+					>
+						{downloading ? 'Generating…' : 'Download'}
+					</Button>
 				</div>
+			</div>
+			{#if downloadError}
+				<p
+					id="download-error"
+					class="mb-2 border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
+					role="alert"
+				>
+					{downloadError}
+				</p>
+			{/if}
+			{#if previewHint}
+				<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
+			{/if}
+			{#if lastPreviewAt && previewUrl}
+				<p class="mb-2 text-xs text-muted-foreground" role="status" aria-live="polite">
+					Preview updated at {lastPreviewAt}.
+				</p>
+			{/if}
+			{#if previewUrl}
+				<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full bg-white"
+				></iframe>
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					Nothing rendered yet. Write your sections, then press Update Preview.
+				</p>
 			{/if}
 		</div>
-	</div>
-
-	<div
-		id="preview"
-		class="w-full border border-border bg-card p-4 shadow-sm {mobileTab === 'preview'
-			? 'block'
-			: 'hidden'} lg:sticky lg:top-4 lg:block lg:w-1/2 lg:self-start"
-		aria-busy={previewLoading}
-		role="tabpanel"
-		aria-label="Preview"
-	>
-		<div class="mb-3 flex items-center justify-between gap-2">
-			<h3 class="text-lg font-semibold">Preview</h3>
-			<div class="flex gap-2">
-				<Button
-					variant="secondary"
-					type="button"
-					disabled={previewLoading}
-					onclick={updatePreviewNow}
-				>
-					{previewLoading ? 'Rendering…' : 'Update Preview'}
-				</Button>
-				<Button
-					type="button"
-					disabled={downloading}
-					aria-describedby={downloadError ? 'download-error' : undefined}
-					onclick={downloadPdf}
-				>
-					{downloading ? 'Generating…' : 'Download'}
-				</Button>
-			</div>
-		</div>
-		{#if downloadError}
-			<p
-				id="download-error"
-				class="mb-2 border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
-				role="alert"
-			>
-				{downloadError}
-			</p>
-		{/if}
-		{#if previewHint}
-			<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
-		{/if}
-		{#if lastPreviewAt && previewUrl}
-			<p class="mb-2 text-xs text-muted-foreground" role="status" aria-live="polite">
-				Preview updated at {lastPreviewAt}.
-			</p>
-		{/if}
-		{#if previewUrl}
-			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full bg-white"></iframe>
-		{:else}
-			<p class="text-sm text-muted-foreground">
-				Nothing rendered yet. Write your sections, then press Update Preview.
-			</p>
-		{/if}
 	</div>
 </div>

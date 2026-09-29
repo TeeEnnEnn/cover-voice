@@ -45,7 +45,7 @@
 						href="/me"
 						aria-label="Account"
 						title="Account"
-						class="flex h-9 w-9 items-center justify-center rounded-full bg-cover-voice-main text-sm font-semibold text-white hover:bg-cover-voice-main/90"
+						class="flex h-9 w-9 items-center justify-center bg-cover-voice-main text-sm font-semibold text-white hover:bg-cover-voice-main/90"
 					>
 						{(data.user.name.trim().charAt(0) || '?').toUpperCase()}
 					</a>
