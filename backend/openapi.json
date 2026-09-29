@@ -561,10 +561,24 @@
             "example": "Cover letter for Acme"
           },
           "rawContent": {
-            "$ref": "#/components/schemas/LetterGenerationSchema"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LetterGenerationSchema"
+              },
+              {
+                "nullable": true
+              }
+            ]
           },
           "generatedContent": {
-            "$ref": "#/components/schemas/LetterGenerationSchema"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LetterGenerationSchema"
+              },
+              {
+                "nullable": true
+              }
+            ]
           }
         },
         "required": [
@@ -619,37 +633,6 @@
         }
       },
       "GenerateLetterBody": {
-        "type": "object",
-        "properties": {
-          "config": {
-            "$ref": "#/components/schemas/LetterConfigSchema"
-          },
-          "sections": {
-            "type": "object",
-            "properties": {
-              "header": {
-                "$ref": "#/components/schemas/LetterSectionSchema"
-              },
-              "body": {
-                "$ref": "#/components/schemas/LetterSectionSchema"
-              },
-              "footer": {
-                "$ref": "#/components/schemas/LetterSectionSchema"
-              }
-            },
-            "required": [
-              "header",
-              "body",
-              "footer"
-            ]
-          }
-        },
-        "required": [
-          "config",
-          "sections"
-        ]
-      },
-      "PreviewLetterBody": {
         "type": "object",
         "properties": {
           "config": {
@@ -2544,6 +2527,151 @@
           },
           "404": {
             "description": "Letter does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/letters/{id}/export": {
+      "get": {
+        "summary": "Download the generated letter as PDF.",
+        "tags": [
+          "letters"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "abc123"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The generated letter as PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Letter does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        },
+                        "details": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "message": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "message"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "message",
+                        "details"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Letter has not been generated yet",
             "content": {
               "application/json": {
                 "schema": {

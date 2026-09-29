@@ -15,9 +15,11 @@ import {
 	letterListSchema,
 	createLetterSchema,
 	updateLetterSchema,
-	generateLetterSchema
+	generateLetterSchema,
+	letterGenerationSchema
 } from '../schemas/letters.js';
 import { letterUsageSchema } from '../schemas/usage.js';
+import { renderLetterPdf } from '../services/pdf.js';
 import { validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { serializeTimestamps } from '../crud/helpers.js';
@@ -202,6 +204,39 @@ registry.registerPath({
 	}
 });
 
+registry.registerPath({
+	method: 'get',
+	path: '/api/letters/{id}/export',
+	summary: 'Download the generated letter as PDF.',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: z.object({ id: z.string().openapi({ example: 'abc123' }) })
+	},
+	responses: {
+		200: {
+			description: 'The generated letter as PDF',
+			content: {
+				'application/pdf': {
+					schema: { type: 'string', format: 'binary' }
+				}
+			}
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		409: {
+			description: 'Letter has not been generated yet',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: z.object({ message: z.string() }) } }
+		}
+	}
+});
+
 const router = Router();
 
 router.get('/letters', requireAuth, async (_req, res) => {
@@ -236,6 +271,32 @@ router.get('/letters/:id/usage', requireAuth, async (req, res) => {
 		return;
 	}
 	res.json(usage);
+});
+
+router.get('/letters/:id/export', requireAuth, async (req, res) => {
+	const userId = res.locals.user!.id;
+	const letterId = req.params.id as string;
+	const letter = await getLetterById(userId, letterId);
+	if (!letter) {
+		res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+		return;
+	}
+	const parsed = letterGenerationSchema.safeParse(letter.generatedContent);
+	if (!parsed.success) {
+		res.status(409).json({
+			error: {
+				message: 'Letter has not been generated yet. Generate it before exporting.',
+				details: []
+			}
+		});
+		return;
+	}
+	const pdf = await renderLetterPdf(parsed.data);
+	const filename = `${letter.title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
+	res.setHeader('Content-Type', 'application/pdf');
+	res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+	res.setHeader('Content-Length', pdf.length);
+	res.status(200).send(pdf);
 });
 
 router.delete('/letters/:id', requireAuth, async (req, res) => {

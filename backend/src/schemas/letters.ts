@@ -56,8 +56,9 @@ export const letterSchema = registry.register(
 		updatedAt: z.string().openapi({ format: 'date-time', example: '2026-08-13T00:00:00.000Z' }),
 		title: z.string().min(1).max(50).openapi({ example: 'Application at Acme' }),
 		description: z.string().nullish().openapi({ example: 'Cover letter for Acme' }),
-		rawContent: letterGenerationSchema, // will have substitution strings
-		generatedContent: letterGenerationSchema // will not have substitution strings
+		// Null until the letter is generated for the first time.
+		rawContent: letterGenerationSchema.nullable(),
+		generatedContent: letterGenerationSchema.nullable()
 	})
 );
 
@@ -80,8 +81,6 @@ export const updateLetterSchema = registry.register(
 );
 
 export const generateLetterSchema = registry.register('GenerateLetterBody', letterGenerationSchema);
-
-export const previewLetterSchema = registry.register('PreviewLetterBody', letterGenerationSchema);
 
 export const letterListSchema = registry.register(
 	'LetterList',

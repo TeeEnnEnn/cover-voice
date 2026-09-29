@@ -1157,6 +1157,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/letters/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the generated letter as PDF. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The generated letter as PDF */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Letter does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Letter has not been generated yet */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1361,8 +1444,8 @@ export interface components {
             title: string;
             /** @example Cover letter for Acme */
             description?: string | null;
-            rawContent: components["schemas"]["LetterGenerationSchema"];
-            generatedContent: components["schemas"]["LetterGenerationSchema"];
+            rawContent: components["schemas"]["LetterGenerationSchema"] & unknown;
+            generatedContent: components["schemas"]["LetterGenerationSchema"] & unknown;
         };
         CreateLetterBody: {
             /** @example Application at Acme */
@@ -1379,14 +1462,6 @@ export interface components {
             generatedContent?: components["schemas"]["LetterGenerationSchema"];
         };
         GenerateLetterBody: {
-            config: components["schemas"]["LetterConfigSchema"];
-            sections: {
-                header: components["schemas"]["LetterSectionSchema"];
-                body: components["schemas"]["LetterSectionSchema"];
-                footer: components["schemas"]["LetterSectionSchema"];
-            };
-        };
-        PreviewLetterBody: {
             config: components["schemas"]["LetterConfigSchema"];
             sections: {
                 header: components["schemas"]["LetterSectionSchema"];

@@ -177,10 +177,6 @@
 									<Label for="blockValue" class="text-lg font-light">block value</Label>
 									<Textarea name="blockValue" id="blockValue" required />
 								</div>
-								<div>
-									<Label class="text-lg font-light">Rendered Preview</Label>
-									<Textarea disabled value="" />
-								</div>
 								<Input type="submit" value="Create" />
 							</form>
 						</div>

@@ -1,46 +1,77 @@
 import type { components } from '$lib/api/schema';
 import type { PageServerLoad, Actions } from './$types';
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { createApiClient } from '$lib/api/client';
 import { requireUser } from '$lib/server/auth';
 
 type Block = components['schemas']['Block'];
 type Variable = components['schemas']['Variable'];
+type LetterGeneration = components['schemas']['LetterGenerationSchema'];
 
-export const load: PageServerLoad = async ({ fetch, request }) => {
+const DEFAULT_CONFIG: LetterGeneration['config'] = {
+	font: 'Helvetica',
+	fontSize: 12,
+	fontColor: '#000000',
+	backgroundColor: '#ffffff',
+	lineHeight: 1.5,
+	textDirection: 'ltr',
+	pageSize: 'A4',
+	marginLeft: 36,
+	marginRight: 36,
+	marginTop: 36,
+	marginBottom: 36
+};
+
+const ALIGNS = ['left', 'right', 'center', 'justify'] as const;
+type Align = (typeof ALIGNS)[number];
+
+function parseAlign(value: FormDataEntryValue | null): Align {
+	return ALIGNS.includes(value as Align) ? (value as Align) : 'left';
+}
+
+function buildContent(formData: FormData): LetterGeneration {
+	return {
+		config: DEFAULT_CONFIG,
+		sections: {
+			header: {
+				text: formData.get('headerText')?.toString() || null,
+				align: parseAlign(formData.get('headerAlign'))
+			},
+			body: {
+				text: formData.get('bodyText')?.toString() || null,
+				align: parseAlign(formData.get('bodyAlign'))
+			},
+			footer: {
+				text: formData.get('footerText')?.toString() || null,
+				align: parseAlign(formData.get('footerAlign'))
+			}
+		}
+	};
+}
+
+export const load: PageServerLoad = async ({ params, fetch, request }) => {
 	const cookie = request.headers.get('cookie');
 	const user = await requireUser(fetch, cookie);
 	const api = createApiClient(fetch, cookie);
+	const letterId = params.id;
 
-	let variableErrorMessage = '';
-	let blockErrorMessage = '';
+	const [letterResult, blockResult, variableResult] = await Promise.all([
+		api.GET('/api/letters/{id}', { params: { path: { id: letterId } } }),
+		api.GET('/api/blocks'),
+		api.GET('/api/variables')
+	]);
 
-	async function loadVariables(): Promise<Variable[] | null> {
-		const { data, error: err } = await api.GET("/api/variables")
-		if (err) {
-			variableErrorMessage = 'Failed to load variables';
-			return null;
-		}
-		return data.variables;
+	if (letterResult.error) {
+		throw error(404, 'Letter not found');
 	}
-
-	async function loadBlocks(): Promise<Block[] | null> {
-		const { data, error: err } = await api.GET('/api/blocks');
-		if (err) {
-			blockErrorMessage = 'Failed to load blocks';
-			return null;
-		}
-		return data.blocks;
-	}
-
-	const results = await Promise.all([loadVariables(), loadBlocks()]);
 
 	return {
 		user,
-		variables: results[0] ?? variableErrorMessage,
-		variableErrorMessage: variableErrorMessage,
-		blocks: results[1] ?? blockErrorMessage,
-		blockErrorMessage: blockErrorMessage
+		letter: letterResult.data,
+		blocks: blockResult.data?.blocks ?? [],
+		blockError: blockResult.error ? 'Failed to load blocks' : null,
+		variables: variableResult.data?.variables ?? [],
+		variableError: variableResult.error ? 'Failed to load variables' : null
 	};
 };
 
@@ -66,7 +97,7 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'newBlock', message: 'Failed to create block.' });
 		}
-		return { success: true, newBlock: data, message: '' };
+		return { action: 'newBlock' as const, success: true, newBlock: data, message: '' };
 	},
 	newVariable: async ({ request, fetch }) => {
 		await requireUser(fetch, request.headers.get('cookie'));
@@ -89,6 +120,51 @@ export const actions = {
 		if (err) {
 			return fail(400, { action: 'newVariable', message: 'Failed to create variable.' });
 		}
-		return { success: true, newVariable: data, message: '' };
+		return { action: 'newVariable' as const, success: true, newVariable: data, message: '' };
+	},
+	saveSections: async ({ request, fetch, params }) => {
+		const cookie = request.headers.get('cookie');
+		await requireUser(fetch, cookie);
+		const formData = await request.formData();
+		const content = buildContent(formData);
+
+		const api = createApiClient(fetch, cookie);
+		const { error: err } = await api.PATCH('/api/letters/{id}', {
+			params: { path: { id: params.id } },
+			body: { rawContent: content }
+		});
+
+		if (err) {
+			return fail(400, { action: 'saveSections', message: 'Failed to save sections.' });
+		}
+		return { action: 'saveSections' as const, success: true, message: 'Sections saved.' };
+	},
+	generate: async ({ request, fetch, params }) => {
+		const cookie = request.headers.get('cookie');
+		await requireUser(fetch, cookie);
+		const formData = await request.formData();
+		const content = buildContent(formData);
+
+		const api = createApiClient(fetch, cookie);
+		const { data, error: err } = await api.POST('/api/letters/{id}/generate', {
+			params: { path: { id: params.id } },
+			body: content
+		});
+
+		if (err) {
+			const message =
+				typeof err === 'object' && err !== null && 'message' in err
+					? String((err as { message: unknown }).message)
+					: 'Failed to generate letter.';
+			return fail(422, { action: 'generate', message });
+		}
+		return {
+			action: 'generate' as const,
+			success: true,
+			letter: data as Letter,
+			message: 'Letter generated.'
+		};
 	}
 } satisfies Actions;
+
+type Letter = components['schemas']['Letter'];
