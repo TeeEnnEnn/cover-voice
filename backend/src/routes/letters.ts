@@ -42,6 +42,10 @@ registry.registerPath({
 		401: {
 			description: 'Not authenticated',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -72,6 +76,10 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
@@ -154,6 +162,10 @@ registry.registerPath({
 		401: {
 			description: 'Not authenticated',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -186,6 +198,10 @@ registry.registerPath({
 		401: {
 			description: 'Not authenticated',
 			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
 });
@@ -210,6 +226,10 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}
@@ -243,6 +263,10 @@ registry.registerPath({
 		},
 		401: {
 			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		}
 	}

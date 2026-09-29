@@ -6,7 +6,11 @@ const testEnv = {
 		process.env.BETTER_AUTH_SECRET ?? 'test-only-secret-0123456789abcdef0123456789abcdef',
 	BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? 'http://localhost',
 	CORS_ORIGINS: process.env.CORS_ORIGINS ?? 'http://localhost:5173',
-	PORT: process.env.PORT ?? '3001'
+	PORT: process.env.PORT ?? '3001',
+	// Dummy values so env validation passes; tests stub the sender (see
+	// tests/setup.ts) and never reach Resend.
+	RESEND_API_KEY: process.env.RESEND_API_KEY ?? 'test-only-resend-key',
+	EMAIL_FROM: process.env.EMAIL_FROM ?? 'Cover Voice <test@example.com>'
 };
 
 // The global setup runs in the main process and does not receive test.env,

@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './db/index.js';
 import * as schema from './db/schema.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from './services/email.js';
 
 const trustedOrigins = (process.env.CORS_ORIGINS ?? '')
 	.split(',')
@@ -13,11 +14,22 @@ export const auth = betterAuth({
 	secret: process.env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg', schema }),
 	emailAndPassword: {
-		// Deliberate: open signup without email verification. There is no
-		// mail provider configured, so requiring verification would lock
-		// everyone out. Revisit (provider + requireEmailVerification) before
-		// opening registration beyond trusted users.
-		enabled: true
+		enabled: true,
+		// Unverified users cannot sign in. Email verification is enforced
+		// (see emailVerification below); open unverified access was retired
+		// once Resend sending was configured.
+		requireEmailVerification: true,
+		sendResetPassword: async ({ user, url }) => {
+			await sendPasswordResetEmail({ to: user.email, url });
+		},
+		resetPasswordTokenExpiresIn: 3600
+	},
+	emailVerification: {
+		sendOnSignUp: true,
+		autoSignInAfterVerification: true,
+		sendVerificationEmail: async ({ user, url }) => {
+			await sendVerificationEmail({ to: user.email, url });
+		}
 	},
 	// Brute-force protection (enabled in production by default). Stricter
 	// limits on the auth endpoints than the general per-IP limit.

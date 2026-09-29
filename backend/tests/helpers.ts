@@ -1,5 +1,6 @@
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { sentEmails } from './setup.js';
 
 // The origin the backend is configured to trust (BETTER_AUTH_URL / CORS_ORIGINS
 // in vitest.config.ts). Better Auth rejects authed requests from other origins.
@@ -21,4 +22,19 @@ export async function signUp(agent: TestAgent, email: string, password = 'passwo
 		password,
 		name: 'Test User'
 	});
+}
+
+/**
+ * Signs up and follows the verification link from the in-memory outbox, so
+ * the agent holds a verified session usable against verification-gated routes.
+ */
+export async function signUpVerified(agent: TestAgent, email: string, password = 'password123') {
+	const res = await signUp(agent, email, password);
+	const html = sentEmails[sentEmails.length - 1].html;
+	const url = new URL(html.match(/href="([^"]+)"/)![1]);
+	const token = url.searchParams.get('token');
+	await agent
+		.get(`/api/auth/verify-email?token=${token}&callbackURL=/`)
+		.set('Origin', TRUSTED_ORIGIN);
+	return res;
 }

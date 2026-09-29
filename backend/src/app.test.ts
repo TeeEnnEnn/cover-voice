@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from './app.js';
-import { signUp, testAgent, testApp, TRUSTED_ORIGIN } from '../tests/helpers.js';
+import { signUp, signUpVerified, testAgent, testApp, TRUSTED_ORIGIN } from '../tests/helpers.js';
 
 describe('health', () => {
 	it('reports ok when the database is reachable', async () => {
@@ -22,23 +22,24 @@ describe('unknown routes', () => {
 describe('authentication', () => {
 	const email = 'test@example.com';
 
-	it('signs up and sets a session cookie', async () => {
+	it('signs up and queues a verification email instead of a session', async () => {
 		const res = await signUp(testAgent(), email);
 		expect(res.status).toBe(200);
 		expect(res.body.user.email).toBe(email);
-		expect(res.headers['set-cookie']).toBeDefined();
+		// No session until the email is verified.
+		expect(res.headers['set-cookie']).toBeUndefined();
 	});
 
-	it('rejects a duplicate signup', async () => {
+	it('rejects a duplicate signup without revealing the account', async () => {
 		const agent = testAgent();
 		await signUp(agent, email);
 		const res = await signUp(agent, email);
-		expect(res.status).toBe(422);
+		expect(res.status).toBe(200);
 	});
 
-	it('signs in with the correct password and returns the session', async () => {
+	it('signs in with the correct password once verified and returns the session', async () => {
 		const agent = testAgent();
-		await signUp(agent, email);
+		await signUpVerified(agent, email);
 
 		const signIn = await agent.post('/api/auth/sign-in/email').set('Origin', TRUSTED_ORIGIN).send({
 			email,
@@ -78,7 +79,7 @@ describe('me', () => {
 	it('returns the current user when authenticated', async () => {
 		const agent = testAgent();
 		const email = 'me@example.com';
-		await signUp(agent, email);
+		await signUpVerified(agent, email);
 
 		const res = await agent.get('/api/me');
 		expect(res.status).toBe(200);

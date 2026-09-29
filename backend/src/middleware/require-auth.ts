@@ -16,6 +16,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 		res.status(401).json({ error: { message: 'Unauthorized', details: [] } });
 		return;
 	}
+	if (!session.user.emailVerified) {
+		res.status(403).json({
+			error: {
+				message: 'Email not verified. Check your inbox for the verification link.',
+				details: []
+			}
+		});
+		return;
+	}
 	res.locals.user = session.user;
 	next();
 }

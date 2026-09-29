@@ -15,6 +15,8 @@ const schema = z.object({
 	CORS_ORIGINS: z.string().optional(),
 	PORT: z.coerce.number().int().positive().default(3001),
 	LOG_LEVEL: z.string().optional(),
+	RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY is required to send auth emails'),
+	EMAIL_FROM: z.string().min(1, 'EMAIL_FROM is required (e.g. Cover Voice <noreply@example.com>)'),
 	DOCS_ENABLED: z
 		.string()
 		.optional()

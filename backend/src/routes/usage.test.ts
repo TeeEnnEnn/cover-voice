@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { signUp, testAgent, TRUSTED_ORIGIN } from '../../tests/helpers.js';
+import { signUpVerified, testAgent, TRUSTED_ORIGIN } from '../../tests/helpers.js';
 
 const generation = (bodyText: string) => ({
 	config: {
@@ -23,7 +23,7 @@ const generation = (bodyText: string) => ({
 });
 
 async function setupUsage(agent: ReturnType<typeof testAgent>, email: string) {
-	await signUp(agent, email);
+	await signUpVerified(agent, email);
 	const variable = await agent
 		.post('/api/variables')
 		.set('Origin', TRUSTED_ORIGIN)
@@ -109,7 +109,7 @@ describe('usage', () => {
 
 	it('deletes unused entities without force', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'usage-unused@example.com');
+		await signUpVerified(agent, 'usage-unused@example.com');
 		const block = await agent
 			.post('/api/blocks')
 			.set('Origin', TRUSTED_ORIGIN)
@@ -122,14 +122,14 @@ describe('usage', () => {
 		const first = testAgent();
 		const { blockId } = await setupUsage(first, 'usage-owner@example.com');
 		const second = testAgent();
-		await signUp(second, 'usage-other@example.com');
+		await signUpVerified(second, 'usage-other@example.com');
 		const res = await second.get(`/api/blocks/${blockId}/usage`);
 		expect(res.status).toBe(404);
 	});
 
 	it('returns 404 usage for unknown ids', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'usage-404@example.com');
+		await signUpVerified(agent, 'usage-404@example.com');
 		expect((await agent.get('/api/blocks/nope/usage')).status).toBe(404);
 		expect((await agent.get('/api/variables/nope/usage')).status).toBe(404);
 		expect((await agent.get('/api/letters/nope/usage')).status).toBe(404);

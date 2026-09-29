@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { signUp, testAgent, testApp, TRUSTED_ORIGIN } from '../../tests/helpers.js';
+import { signUpVerified, testAgent, testApp, TRUSTED_ORIGIN } from '../../tests/helpers.js';
 
 describe('blocks', () => {
 	it('rejects unauthenticated requests', async () => {
@@ -9,14 +9,14 @@ describe('blocks', () => {
 
 	it('lists blocks for the signed-in user', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'blocks@example.com');
+		await signUpVerified(agent, 'blocks@example.com');
 		const res = await agent.get('/api/blocks');
 		expect(res.status).toBe(200);
 	});
 
 	it('creates and lists blocks for the signed-in user', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'blocks@example.com');
+		await signUpVerified(agent, 'blocks@example.com');
 
 		const create = await agent
 			.post('/api/blocks')
@@ -35,7 +35,7 @@ describe('blocks', () => {
 
 	it('rejects an empty block name', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'blocks2@example.com');
+		await signUpVerified(agent, 'blocks2@example.com');
 
 		const res = await agent
 			.post('/api/blocks')
@@ -46,7 +46,7 @@ describe('blocks', () => {
 
 	it('rejects a missing block value', async () => {
 		const agent = testAgent();
-		await signUp(agent, 'blocks3@example.com');
+		await signUpVerified(agent, 'blocks3@example.com');
 
 		const res = await agent
 			.post('/api/blocks')
@@ -57,7 +57,7 @@ describe('blocks', () => {
 
 	it('does not leak blocks between users', async () => {
 		const first = testAgent();
-		await signUp(first, 'owner@example.com');
+		await signUpVerified(first, 'owner@example.com');
 		await first
 			.post('/api/blocks')
 			.set('Origin', TRUSTED_ORIGIN)
@@ -66,7 +66,7 @@ describe('blocks', () => {
 		expect(own.body.blocks).toHaveLength(1);
 
 		const second = testAgent();
-		await signUp(second, 'other@example.com');
+		await signUpVerified(second, 'other@example.com');
 		const list = await second.get('/api/blocks');
 		expect(list.status).toBe(200);
 		expect(list.body.blocks).toHaveLength(0);
