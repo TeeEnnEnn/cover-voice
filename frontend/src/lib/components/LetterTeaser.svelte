@@ -14,7 +14,7 @@
 	let busy = $state(false);
 </script>
 
-<div class="rounded-lg border border-border bg-card p-4 shadow-sm">
+<div class=" border border-border bg-card p-4 shadow-sm">
 	<form
 		method="post"
 		action="?/updateLetter"
@@ -56,7 +56,7 @@
 			{/if}
 		</div>
 		<input type="hidden" value={letter.id} name="letterId" />
-		<div class="flex flex-col gap-1 text-muted-foreground">
+		<div class="flex gap-2 text-muted-foreground">
 			<small>created: {Intl.DateTimeFormat('en-GB').format(new Date(letter.createdAt))}</small>
 			<small>updated: {Intl.DateTimeFormat('en-GB').format(new Date(letter.updatedAt))}</small>
 		</div>

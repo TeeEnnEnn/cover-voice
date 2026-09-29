@@ -128,7 +128,7 @@
 		<div class="grid w-full grid-cols-1 gap-10 lg:grid-cols-3">
 			<div
 				id="letters-panel"
-				class="flex scroll-mt-4 flex-col gap-6 rounded-lg border border-border bg-card px-4 py-4 shadow-sm lg:col-span-2"
+				class="flex scroll-mt-4 flex-col gap-6 border border-border bg-card px-4 py-4 shadow-sm lg:col-span-2"
 			>
 				<h3 class="text-lg font-semibold">Letters</h3>
 				<div>
@@ -187,7 +187,7 @@
 			<div class="flex flex-col gap-10">
 				<div
 					id="blocks-panel"
-					class="flex flex-1 scroll-mt-4 flex-col gap-6 rounded-lg border border-border bg-card px-4 py-4 shadow-sm"
+					class="flex flex-1 scroll-mt-4 flex-col gap-6  border border-border bg-card px-4 py-4 shadow-sm"
 				>
 					<h3 class="text-lg font-semibold">Blocks</h3>
 					<div>
@@ -247,7 +247,7 @@
 				</div>
 				<div
 					id="variables-panel"
-					class="flex flex-1 scroll-mt-4 flex-col gap-6 rounded-lg border border-border bg-card px-4 py-4 shadow-sm"
+					class="flex flex-1 scroll-mt-4 flex-col gap-6 border border-border bg-card px-4 py-4 shadow-sm"
 				>
 					<h3 class="text-lg font-semibold">Variables</h3>
 					<div>

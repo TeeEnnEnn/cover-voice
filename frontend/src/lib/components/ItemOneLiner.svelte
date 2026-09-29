@@ -11,7 +11,7 @@
 </script>
 
 <div
-	class="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1 hover:bg-accent"
+	class="flex items-center justify-between gap-2 border border-border px-3 py-1 hover:bg-accent"
 >
 	<span class="text-start text-muted-foreground">{name}</span>
 	<span class="flex shrink-0 items-center gap-2">

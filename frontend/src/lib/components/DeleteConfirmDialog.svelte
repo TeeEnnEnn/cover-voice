@@ -35,7 +35,7 @@
 		}}
 	>
 		<div
-			class="w-full max-w-md rounded-lg bg-card p-6"
+			class="w-full max-w-md bg-card p-6"
 			role="alertdialog"
 			tabindex="-1"
 			aria-modal="true"

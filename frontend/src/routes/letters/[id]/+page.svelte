@@ -31,20 +31,22 @@
 
 	// One-time snapshot: this page never invalidates `data` (saves go through
 	// direct fetch, not form actions), so snapshotting once per mount is correct.
-	const storedContent = data.letter.rawContent;
+	const storedContent = $derived(data.letter.rawContent);
 
-	const initialSections = storedContent?.sections ?? {
-		header: { text: '', align: 'left' as Align },
-		body: { text: '', align: 'left' as Align },
-		footer: { text: '', align: 'left' as Align }
-	};
+	const initialSections = $derived(
+		storedContent?.sections ?? {
+			header: { text: '', align: 'left' as Align },
+			body: { text: '', align: 'left' as Align },
+			footer: { text: '', align: 'left' as Align }
+		}
+	);
 
-	let headerText = $state(initialSections.header.text ?? '');
-	let bodyText = $state(initialSections.body.text ?? '');
-	let footerText = $state(initialSections.footer.text ?? '');
-	let headerAlign = $state<Align>(initialSections.header.align ?? 'left');
-	let bodyAlign = $state<Align>(initialSections.body.align ?? 'left');
-	let footerAlign = $state<Align>(initialSections.footer.align ?? 'left');
+	let headerText = $derived(initialSections.header.text ?? '');
+	let bodyText = $derived(initialSections.body.text ?? '');
+	let footerText = $derived(initialSections.footer.text ?? '');
+	let headerAlign = $derived<Align>(initialSections.header.align ?? 'left');
+	let bodyAlign = $derived<Align>(initialSections.body.align ?? 'left');
+	let footerAlign = $derived<Align>(initialSections.footer.align ?? 'left');
 
 	let previewUrl = $state<string | null>(null);
 	let previewLoading = $state(false);
@@ -100,7 +102,7 @@
 		};
 	}
 
-	let pageConfig = $state<PageConfig>(normalizeConfig(storedContent?.config));
+	let pageConfig = $derived<PageConfig>(normalizeConfig(storedContent?.config));
 	let styleOpen = $state(true);
 
 	let configDirty = $derived.by(() => {
@@ -422,7 +424,7 @@
 		return out;
 	}
 
-	let savedSnap = $state({
+	let savedSnap = $derived({
 		header: {
 			text: initialSections.header.text ?? '',
 			align: initialSections.header.align ?? 'left'
@@ -494,16 +496,11 @@
 		<div class="flex flex-col gap-4">
 			{#each sectionMeta as section (section.key)}
 				{@const refs = refsIn(textFor(section.key))}
-				<div
-					id="section-{section.key}"
-					class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm"
-				>
+				<div id="section-{section.key}" class=" border border-border bg-card px-3 py-3 shadow-sm">
 					<div class="flex items-center justify-between gap-2">
 						<p class="font-medium">{section.prompt}</p>
 						{#if isDirty(section.key)}
-							<span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
-								>Unsaved</span
-							>
+							<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span>
 						{/if}
 					</div>
 					<div class="mt-2 flex flex-col gap-2">
@@ -531,7 +528,7 @@
 								<ul
 									role="listbox"
 									aria-label="{menu.kind === 'block' ? 'Block' : 'Variable'} suggestions"
-									class="absolute z-20 w-56 overflow-hidden rounded-lg border border-border bg-popover shadow-lg"
+									class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
 									style="top: {menuPos.top}px; left: {menuPos.left}px;"
 								>
 									{#each menuItems as item, i (item.id)}
@@ -587,7 +584,7 @@
 								setAlign(section.key, e.currentTarget.value as Align);
 								onEditorInput();
 							}}
-							class="rounded-md border border-border bg-card px-2 py-1"
+							class=" border border-border bg-card px-2 py-1"
 						>
 							{#each aligns as align (align)}
 								<option value={align}>{align}</option>
@@ -598,14 +595,12 @@
 			{/each}
 		</div>
 
-		<div id="page-style" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
+		<div id="page-style" class=" border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Page style</h3>
 				<div class="flex items-center gap-2">
 					{#if configDirty}
-						<span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
-							>Unsaved</span
-						>
+						<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span>
 					{/if}
 					<Button
 						variant="outline"
@@ -632,7 +627,7 @@
 									pageConfig.font = e.currentTarget.value as PageFont;
 									onEditorInput();
 								}}
-								class="rounded-md border border-border bg-card px-2 py-1"
+								class=" border border-border bg-card px-2 py-1"
 							>
 								{#each pageFonts as font (font)}
 									<option value={font}>{font}</option>
@@ -648,7 +643,7 @@
 									pageConfig.pageSize = e.currentTarget.value as PageSizeOption;
 									onEditorInput();
 								}}
-								class="rounded-md border border-border bg-card px-2 py-1"
+								class=" border border-border bg-card px-2 py-1"
 							>
 								{#each pageSizes as size (size)}
 									<option value={size}>{size}</option>
@@ -691,12 +686,12 @@
 									pageConfig.fontColor = e.currentTarget.value;
 									onEditorInput();
 								}}
-								class="h-9 w-full rounded-md border border-border bg-card px-1"
+								class="h-9 w-full border border-border bg-card px-1"
 							/>
 						</div>
 						<div class="flex flex-col gap-1">
 							<Label for="pageBackgroundColor">Background color</Label>
-							<input
+							<Input
 								id="pageBackgroundColor"
 								type="color"
 								value={pageConfig.backgroundColor}
@@ -704,7 +699,7 @@
 									pageConfig.backgroundColor = e.currentTarget.value;
 									onEditorInput();
 								}}
-								class="h-9 w-full rounded-md border border-border bg-card px-1"
+								class="h-9 w-full border border-border bg-card px-1"
 							/>
 						</div>
 					</div>
@@ -732,7 +727,7 @@
 			{/if}
 		</div>
 
-		<div id="variables" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
+		<div id="variables" class=" border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Variables</h3>
 				<Button
@@ -815,7 +810,7 @@
 			{/if}
 		</div>
 
-		<div id="blocks" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
+		<div id="blocks" class=" border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Blocks</h3>
 				<Button
@@ -889,7 +884,7 @@
 
 	<div
 		id="preview"
-		class="w-full rounded-lg border border-border bg-card p-4 shadow-sm {mobileTab === 'preview'
+		class="w-full border border-border bg-card p-4 shadow-sm {mobileTab === 'preview'
 			? 'block'
 			: 'hidden'} lg:sticky lg:top-4 lg:block lg:w-1/2 lg:self-start"
 		aria-busy={previewLoading}
@@ -920,7 +915,7 @@
 		{#if downloadError}
 			<p
 				id="download-error"
-				class="mb-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
+				class="mb-2 border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
 				role="alert"
 			>
 				{downloadError}
@@ -935,8 +930,7 @@
 			</p>
 		{/if}
 		{#if previewUrl}
-			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full rounded bg-white"
-			></iframe>
+			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full bg-white"></iframe>
 		{:else}
 			<p class="text-sm text-muted-foreground">
 				Nothing rendered yet. Write your sections, then press Update Preview.

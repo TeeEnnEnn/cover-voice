@@ -23,28 +23,24 @@
 
 	const faqs = [
 		{
+			q: 'Does Cover Voice make CVs?',
+			a: "No vover voice does not make CVs but check out <a href='https://rendercv.com/' style='text-decoration: underline' target='_blank' rel='noopener'>RenderCV<a/>. They might just have exactly what you are looking for.",
+			hasMarkup: true
+		},
+		{
 			q: 'What are blocks and variables?',
-			a: 'Blocks are reusable chunks of text, like an opening paragraph or a sign-off. Variables are single values, like a company name or a link. Reference them from any letter instead of retyping them every time.'
+			a: 'Blocks are reusable chunks of text, like an opening paragraph or a sign-off. Variables are single values, like a company name or a link. Reference them from any letter instead of retyping them every time.',
+			hasMarkup: false
 		},
 		{
 			q: 'How do {% %} and {{ }} references work?',
-			a: 'Write {%intro%} to pull in the block named "intro", and {{company}} to pull in the variable named "company". The editor suggests names as you type and flags anything it cannot resolve before you preview.'
-		},
-		{
-			q: 'What happens if I delete something that is in use?',
-			a: 'Cover Voice tracks every reference. Deleting a block or variable that letters or other blocks depend on shows you exactly where it is used, and asks you to confirm before anything is removed.'
-		},
-		{
-			q: 'Do I have to regenerate after every edit?',
-			a: 'No. Your sections save automatically as you type. The preview only re-renders when you ask for it, and downloading saves a snapshot of the final letter as a PDF.'
+			a: 'Write {%intro%} to pull in the block named "intro", and {{company}} to pull in the variable named "company". The editor suggests names as you type and flags anything it cannot resolve before you preview.',
+			hasMarkup: false
 		},
 		{
 			q: 'Is my data private?',
-			a: 'Yes. Blocks, variables, and letters belong to your account only — other users can never see or reference them.'
-		},
-		{
-			q: 'Can I install Cover Voice on my device?',
-			a: 'Yes. Cover Voice is installable as an app on desktop and mobile, so your workspace is always one tap away.'
+			a: 'Yes. Blocks, variables, and letters belong to your account only — other users can never see or reference them.',
+			hasMarkup: false
 		}
 	];
 </script>
@@ -57,10 +53,10 @@
 			alt="Cover Voice logo"
 			width="96"
 			height="96"
-			class="h-24 w-24 rounded-3xl shadow-lg"
+			class="h-24 w-24 shadow-lg"
 		/>
 		<p
-			class="rounded-full border border-cover-voice-main/30 bg-cover-voice-main/10 px-4 py-1 text-sm font-medium text-cover-voice-main"
+			class="border border-cover-voice-main/30 bg-cover-voice-main/10 px-4 py-1 text-sm font-medium text-cover-voice-main"
 		>
 			Cover letters in your own voice
 		</p>
@@ -87,7 +83,7 @@
 					href="/signup"
 					class="bg-cover-voice-main px-8 py-3 text-base text-white hover:bg-cover-voice-main/90"
 				>
-					Get started free
+					Get started
 				</Button>
 				<Button href="/signin" variant="outline" class="px-8 py-3 text-base">Sign in</Button>
 			{/if}
@@ -102,9 +98,9 @@
 		</p>
 		<div class="mt-8 grid gap-4 md:grid-cols-3">
 			{#each steps as step (step.n)}
-				<div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm">
+				<div class="flex flex-col gap-3 border border-border bg-card p-6 shadow-sm">
 					<span
-						class="flex h-10 w-10 items-center justify-center rounded-full bg-cover-voice-main text-lg font-semibold text-white"
+						class="flex h-10 w-10 items-center justify-center bg-cover-voice-main text-lg font-semibold text-white"
 						>{step.n}</span
 					>
 					<h3 class="text-lg font-semibold">{step.title}</h3>
@@ -119,7 +115,7 @@
 		<h2 class="text-center text-3xl font-semibold">Frequently asked questions</h2>
 		<div class="mt-8 flex flex-col gap-3">
 			{#each faqs as faq (faq.q)}
-				<details class="group rounded-lg border border-border bg-card px-5 py-4 shadow-sm">
+				<details class="group border border-border bg-card px-5 py-4 shadow-sm">
 					<summary
 						class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden"
 					>
@@ -138,8 +134,12 @@
 							aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg
 						>
 					</summary>
+					{#if faq.hasMarkup}
+					<p class="mt-2 text-sm text-muted-foreground">{@html faq.a}</p>
+					{:else}
 					<p class="mt-2 text-sm text-muted-foreground">{faq.a}</p>
-				</details>
+					{/if}
+					</details>
 			{/each}
 		</div>
 	</section>
@@ -147,10 +147,10 @@
 	<!-- Bottom CTA -->
 	<section class="py-12">
 		<div
-			class="flex flex-col items-center gap-4 rounded-2xl bg-cover-voice-main px-6 py-12 text-center text-white"
+			class="flex flex-col items-center gap-4 bg-cover-voice-main px-6 py-12 text-center text-white"
 		>
-			<h2 class="max-w-xl text-3xl font-semibold">Ready to write your next cover letter?</h2>
-			<p class="max-w-lg text-white/80">
+			<h2 class="max-w-2xl text-3xl font-semibold">Ready to write your next cover letter?</h2>
+			<p class="max-w-xl text-xl font-bold ">
 				Set up your blocks once, then generate tailored letters in minutes.
 			</p>
 			{#if data.user}
@@ -158,9 +158,7 @@
 					>Open your dashboard</Button
 				>
 			{:else}
-				<Button href="/signup" variant="secondary" class="px-8 py-3 text-base">
-					Get started free
-				</Button>
+				<Button href="/signup" variant="secondary" class="px-8 py-3 text-base">Get started</Button>
 			{/if}
 		</div>
 	</section>
