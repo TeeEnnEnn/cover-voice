@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import { pino } from 'pino';
 import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
@@ -18,6 +19,8 @@ const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
 	.map((origin) => origin.trim())
 	.filter(Boolean);
 
+const docsEnabled = process.env.DOCS_ENABLED === 'true' || process.env.NODE_ENV !== 'production';
+
 const httpLogger = pinoHttp({
 	logger: pino({
 		level: process.env.NODE_ENV === 'test' ? 'silent' : (process.env.LOG_LEVEL ?? 'info')
@@ -30,14 +33,33 @@ const httpLogger = pinoHttp({
 export function createApp() {
 	const app = express();
 
+	// Behind Caddy (or any TLS-terminating proxy) so secure cookies and
+	// client IPs resolve correctly. Trust only the first proxy hop.
+	app.set('trust proxy', 1);
+
 	app.use(httpLogger);
-	app.use(
-		cors({
-			origin: allowedOrigins.length > 0 ? allowedOrigins : true,
-			methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-			credentials: true
-		})
-	);
+	if (allowedOrigins.length === 0) {
+		// Fail closed: reflecting arbitrary origins with credentials would let
+		// any site make authenticated requests on a user's behalf. Set
+		// CORS_ORIGINS explicitly; same-origin traffic (e.g. via Caddy) is
+		// unaffected. Without this, an empty CORS_ORIGINS previously reflected
+		// any origin.
+		app.use(
+			cors({
+				origin: false,
+				methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+				credentials: true
+			})
+		);
+	} else {
+		app.use(
+			cors({
+				origin: allowedOrigins,
+				methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+				credentials: true
+			})
+		);
+	}
 	// Content-Security-Policy is disabled because Swagger UI serves inline
 	// scripts; re-enable it if you remove or self-host the docs UI.
 	app.use(helmet({ contentSecurityPolicy: false }));
@@ -47,18 +69,32 @@ export function createApp() {
 
 	app.use(express.json({ limit: '1mb' }));
 
+	// Generous per-IP throttle for the API (auth endpoints have their own
+	// stricter better-auth limits). Health stays unthrottled for load
+	// balancers and deploy checks.
+	const apiLimiter = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: 1000,
+		standardHeaders: 'draft-8',
+		legacyHeaders: false,
+		message: { error: { message: 'Too many requests, please slow down.', details: [] } }
+	});
+
 	app.use('/api', healthRouter);
+	app.use('/api', apiLimiter);
 	app.use('/api', meRouter);
 	app.use('/api', blockRouter);
 	app.use('/api', variableRouter);
 	app.use('/api', letterRouter);
 
-	// Swagger UI with the spec generated from the route registry.
-	const spec = buildOpenApiDocument();
-	app.get('/api/openapi.json', (_req, res) => {
-		res.json(spec);
-	});
-	app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(spec));
+	if (docsEnabled) {
+		// Swagger UI with the spec generated from the route registry.
+		const spec = buildOpenApiDocument();
+		app.get('/api/openapi.json', (_req, res) => {
+			res.json(spec);
+		});
+		app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(spec));
+	}
 
 	// 404 for unknown API routes.
 	app.use('/api', (_req, res) => {

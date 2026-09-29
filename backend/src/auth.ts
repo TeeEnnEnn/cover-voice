@@ -13,6 +13,10 @@ export const auth = betterAuth({
 	secret: process.env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'pg', schema }),
 	emailAndPassword: {
+		// Deliberate: open signup without email verification. There is no
+		// mail provider configured, so requiring verification would lock
+		// everyone out. Revisit (provider + requireEmailVerification) before
+		// opening registration beyond trusted users.
 		enabled: true
 	},
 	// Brute-force protection (enabled in production by default). Stricter

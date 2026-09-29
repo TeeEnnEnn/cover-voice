@@ -7,10 +7,20 @@ const schema = z.object({
 		.min(32, 'BETTER_AUTH_SECRET is required and must be at least 32 characters'),
 	BETTER_AUTH_URL: z
 		.string()
-		.min(1, 'BETTER_AUTH_URL is required (e.g. http://localhost or https://your-domain.com)'),
+		.min(1, 'BETTER_AUTH_URL is required (e.g. http://localhost or https://your-domain.com)')
+		.refine(
+			(url) => process.env.NODE_ENV !== 'production' || url.startsWith('https://'),
+			'BETTER_AUTH_URL must use https:// in production'
+		),
 	CORS_ORIGINS: z.string().optional(),
 	PORT: z.coerce.number().int().positive().default(3001),
-	LOG_LEVEL: z.string().optional()
+	LOG_LEVEL: z.string().optional(),
+	DOCS_ENABLED: z
+		.string()
+		.optional()
+		.transform((value) =>
+			value === undefined ? process.env.NODE_ENV !== 'production' : value === 'true'
+		)
 });
 
 export type Env = z.infer<typeof schema>;

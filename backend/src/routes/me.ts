@@ -1,9 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { fromNodeHeaders } from 'better-auth/node';
 import { registry } from '../openapi/registry.js';
 import { validationErrorSchema } from '../schemas/common.js';
-import { auth } from '../auth.js';
+import { requireAuth } from '../middleware/require-auth.js';
 
 const user = z.object({
 	id: z.string(),
@@ -31,21 +30,8 @@ registry.registerPath({
 
 const router = Router();
 
-router.get('/me', async (req, res) => {
-	let session;
-	try {
-		session = await auth.api.getSession({
-			headers: fromNodeHeaders(req.headers)
-		});
-	} catch {
-		res.status(500).json({ error: { message: 'Failed to verify session', details: [] } });
-		return;
-	}
-	if (!session) {
-		res.status(401).json({ error: { message: 'Unauthorized', details: [] } });
-		return;
-	}
-	const { user: u } = session;
+router.get('/me', requireAuth, async (_req, res) => {
+	const u = res.locals.user as { id: string; name: string; email: string };
 	res.json({ user: { id: u.id, name: u.name, email: u.email } } satisfies z.infer<typeof meOk>);
 });
 
