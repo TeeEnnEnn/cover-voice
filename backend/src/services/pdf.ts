@@ -12,8 +12,7 @@ const BUILTIN_FONTS = {
 /**
  * Renders a generated letter (no substitution tags left) to a PDF Buffer.
  * Honors font, size, colors, line height, page size, margins, and per-section
- * alignment from the letter config. `textDirection` is not applied: pdfkit
- * has no bidi direction option.
+ * alignment from the letter config.
  */
 export async function renderLetterPdf(generated: LetterGeneration): Promise<Buffer> {
 	const { config, sections } = generated;

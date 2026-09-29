@@ -434,14 +434,6 @@
             "maximum": 10,
             "example": 1.5
           },
-          "textDirection": {
-            "type": "string",
-            "enum": [
-              "ltr",
-              "rtl"
-            ],
-            "example": "ltr"
-          },
           "pageSize": {
             "type": "string",
             "enum": [
@@ -481,7 +473,6 @@
           "fontColor",
           "backgroundColor",
           "lineHeight",
-          "textDirection",
           "pageSize",
           "marginLeft",
           "marginRight",

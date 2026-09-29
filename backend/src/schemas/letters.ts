@@ -15,7 +15,6 @@ export const letterConfigSchema = registry.register(
 			.regex(/^#[0-9A-Fa-f]{6}$/)
 			.openapi({ example: '#ffffff' }),
 		lineHeight: z.number().openapi({ example: 1.5 }).positive().max(10),
-		textDirection: z.enum(['ltr', 'rtl']).openapi({ example: 'ltr' }),
 		pageSize: z.enum(['A4', 'LETTER']).openapi({ example: 'A4' }),
 		marginLeft: z.number().openapi({ example: 10 }).nonnegative().max(200), // points
 		marginRight: z.number().openapi({ example: 10 }).nonnegative().max(200), // points

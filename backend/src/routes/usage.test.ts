@@ -8,7 +8,6 @@ const generation = (bodyText: string) => ({
 		fontColor: '#000000',
 		backgroundColor: '#ffffff',
 		lineHeight: 1.5,
-		textDirection: 'ltr',
 		pageSize: 'A4',
 		marginLeft: 10,
 		marginRight: 10,

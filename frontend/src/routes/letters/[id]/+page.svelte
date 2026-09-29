@@ -29,7 +29,11 @@
 		}
 	});
 
-	const initialSections = data.letter.rawContent?.sections ?? {
+	// One-time snapshot: this page never invalidates `data` (saves go through
+	// direct fetch, not form actions), so snapshotting once per mount is correct.
+	const storedContent = data.letter.rawContent;
+
+	const initialSections = storedContent?.sections ?? {
 		header: { text: '', align: 'left' as Align },
 		body: { text: '', align: 'left' as Align },
 		footer: { text: '', align: 'left' as Align }
@@ -55,25 +59,74 @@
 	let saveState = $state<'idle' | 'saving' | 'saved' | 'error'>('idle');
 	let saveError = $state<string | null>(null);
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
-	const letterId = data.letter.id;
+	let letterId = $derived(data.letter.id);
 
-	const DEFAULT_CONFIG = {
+	type PageConfig = LetterGeneration['config'];
+	type PageFont = PageConfig['font'];
+	type PageSizeOption = PageConfig['pageSize'];
+	type NumberConfigKey =
+		'fontSize' | 'lineHeight' | 'marginLeft' | 'marginRight' | 'marginTop' | 'marginBottom';
+
+	const DEFAULT_CONFIG: PageConfig = {
 		font: 'Helvetica',
 		fontSize: 12,
 		fontColor: '#000000',
 		backgroundColor: '#ffffff',
 		lineHeight: 1.5,
-		textDirection: 'ltr',
 		pageSize: 'A4',
 		marginLeft: 36,
 		marginRight: 36,
 		marginTop: 36,
 		marginBottom: 36
-	} as const;
+	};
+
+	function normalizeConfig(stored: unknown): PageConfig {
+		const c = (stored ?? {}) as Partial<Record<keyof PageConfig, unknown>>;
+		const num = (v: unknown, min: number, max: number, fallback: number) =>
+			typeof v === 'number' && Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : fallback;
+		const hex = (v: unknown, fallback: string) =>
+			typeof v === 'string' && /^#[0-9A-Fa-f]{6}$/.test(v) ? v : fallback;
+		return {
+			font: c.font === 'Courier' || c.font === 'Times-Roman' ? c.font : 'Helvetica',
+			fontSize: num(c.fontSize, 1, 100, 12),
+			fontColor: hex(c.fontColor, '#000000'),
+			backgroundColor: hex(c.backgroundColor, '#ffffff'),
+			lineHeight: num(c.lineHeight, 0.5, 10, 1.5),
+			pageSize: c.pageSize === 'LETTER' ? 'LETTER' : 'A4',
+			marginLeft: num(c.marginLeft, 0, 200, 36),
+			marginRight: num(c.marginRight, 0, 200, 36),
+			marginTop: num(c.marginTop, 0, 200, 36),
+			marginBottom: num(c.marginBottom, 0, 200, 36)
+		};
+	}
+
+	let pageConfig = $state<PageConfig>(normalizeConfig(storedContent?.config));
+	let styleOpen = $state(true);
+
+	let configDirty = $derived.by(() => {
+		const a = pageConfig;
+		const b = savedSnap.config;
+		return (Object.keys(a) as Array<keyof PageConfig>).some((k) => a[k] !== b[k]);
+	});
+
+	function setConfigNumber(
+		key: NumberConfigKey,
+		raw: number,
+		min: number,
+		max: number,
+		decimals: number
+	) {
+		const fallback = pageConfig[key];
+		let next = Number.isFinite(raw) ? raw : fallback;
+		next = Math.min(max, Math.max(min, next));
+		const factor = 10 ** decimals;
+		(pageConfig as Record<NumberConfigKey, number>)[key] = Math.round(next * factor) / factor;
+		onEditorInput();
+	}
 
 	function currentContent(): LetterGeneration {
 		return {
-			config: { ...DEFAULT_CONFIG },
+			config: { ...pageConfig },
 			sections: {
 				header: { text: headerText || null, align: headerAlign },
 				body: { text: bodyText || null, align: bodyAlign },
@@ -131,7 +184,8 @@
 			savedSnap = {
 				header: { text: headerText, align: headerAlign },
 				body: { text: bodyText, align: bodyAlign },
-				footer: { text: footerText, align: footerAlign }
+				footer: { text: footerText, align: footerAlign },
+				config: { ...pageConfig }
 			};
 			saveState = 'saved';
 		} catch {
@@ -198,6 +252,14 @@
 		{ key: 'footer', title: 'Footer', prompt: 'How will you end your cover letter?' }
 	] as const;
 	const aligns = ['left', 'center', 'right', 'justify'] as const;
+	const pageFonts = ['Courier', 'Helvetica', 'Times-Roman'] as const;
+	const pageSizes = ['A4', 'LETTER'] as const;
+	const marginFields = [
+		{ key: 'marginTop', label: 'Top' },
+		{ key: 'marginRight', label: 'Right' },
+		{ key: 'marginBottom', label: 'Bottom' },
+		{ key: 'marginLeft', label: 'Left' }
+	] as const;
 
 	function textFor(key: 'header' | 'body' | 'footer'): string {
 		return key === 'header' ? headerText : key === 'body' ? bodyText : footerText;
@@ -369,7 +431,8 @@
 		footer: {
 			text: initialSections.footer.text ?? '',
 			align: initialSections.footer.align ?? 'left'
-		}
+		},
+		config: normalizeConfig(storedContent?.config)
 	});
 
 	function isDirty(key: SectionKey): boolean {
@@ -533,6 +596,140 @@
 					</div>
 				</div>
 			{/each}
+		</div>
+
+		<div id="page-style" class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm">
+			<div class="flex items-center justify-between gap-2">
+				<h3 class="text-lg font-semibold">Page style</h3>
+				<div class="flex items-center gap-2">
+					{#if configDirty}
+						<span class="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800"
+							>Unsaved</span
+						>
+					{/if}
+					<Button
+						variant="outline"
+						type="button"
+						aria-expanded={styleOpen}
+						aria-controls="page-style-body"
+						onclick={() => {
+							styleOpen = !styleOpen;
+						}}
+					>
+						{styleOpen ? 'Hide' : 'Show'}
+					</Button>
+				</div>
+			</div>
+			{#if styleOpen}
+				<div id="page-style-body" transition:slide class="mt-2 flex flex-col gap-3">
+					<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+						<div class="flex flex-col gap-1">
+							<Label for="pageFont">Font</Label>
+							<select
+								id="pageFont"
+								value={pageConfig.font}
+								onchange={(e) => {
+									pageConfig.font = e.currentTarget.value as PageFont;
+									onEditorInput();
+								}}
+								class="rounded-md border border-gray-300 px-2 py-1"
+							>
+								{#each pageFonts as font (font)}
+									<option value={font}>{font}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1">
+							<Label for="pageSize">Page size</Label>
+							<select
+								id="pageSize"
+								value={pageConfig.pageSize}
+								onchange={(e) => {
+									pageConfig.pageSize = e.currentTarget.value as PageSizeOption;
+									onEditorInput();
+								}}
+								class="rounded-md border border-gray-300 px-2 py-1"
+							>
+								{#each pageSizes as size (size)}
+									<option value={size}>{size}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1">
+							<Label for="pageFontSize">Font size (pt)</Label>
+							<Input
+								id="pageFontSize"
+								type="number"
+								min={1}
+								max={100}
+								step={1}
+								value={pageConfig.fontSize}
+								oninput={(e) =>
+									setConfigNumber('fontSize', e.currentTarget.valueAsNumber, 1, 100, 0)}
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							<Label for="pageLineHeight">Line height (×)</Label>
+							<Input
+								id="pageLineHeight"
+								type="number"
+								min={0.5}
+								max={10}
+								step={0.1}
+								value={pageConfig.lineHeight}
+								oninput={(e) =>
+									setConfigNumber('lineHeight', e.currentTarget.valueAsNumber, 0.5, 10, 1)}
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							<Label for="pageFontColor">Text color</Label>
+							<input
+								id="pageFontColor"
+								type="color"
+								value={pageConfig.fontColor}
+								oninput={(e) => {
+									pageConfig.fontColor = e.currentTarget.value;
+									onEditorInput();
+								}}
+								class="h-9 w-full rounded-md border border-gray-300 bg-white px-1"
+							/>
+						</div>
+						<div class="flex flex-col gap-1">
+							<Label for="pageBackgroundColor">Background color</Label>
+							<input
+								id="pageBackgroundColor"
+								type="color"
+								value={pageConfig.backgroundColor}
+								oninput={(e) => {
+									pageConfig.backgroundColor = e.currentTarget.value;
+									onEditorInput();
+								}}
+								class="h-9 w-full rounded-md border border-gray-300 bg-white px-1"
+							/>
+						</div>
+					</div>
+					<div class="flex flex-col gap-1">
+						<p class="text-sm font-medium">Margins (pt)</p>
+						<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+							{#each marginFields as field (field.key)}
+								<div class="flex flex-col gap-1">
+									<Label for="pageMargin-{field.key}">{field.label}</Label>
+									<Input
+										id="pageMargin-{field.key}"
+										type="number"
+										min={0}
+										max={200}
+										step={1}
+										value={pageConfig[field.key]}
+										oninput={(e) =>
+											setConfigNumber(field.key, e.currentTarget.valueAsNumber, 0, 200, 0)}
+									/>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<div id="variables" class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm">

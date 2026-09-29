@@ -1803,11 +1803,6 @@ export interface components {
             /** @example 1.5 */
             lineHeight: number;
             /**
-             * @example ltr
-             * @enum {string}
-             */
-            textDirection: "ltr" | "rtl";
-            /**
              * @example A4
              * @enum {string}
              */
