@@ -52,6 +52,13 @@
 <div class="mx-auto w-full max-w-5xl px-4">
 	<!-- Hero + top CTA -->
 	<section class="flex flex-col items-center gap-6 py-20 text-center md:py-28">
+		<img
+			src="/Cover-Voice_192x192.svg"
+			alt="Cover Voice logo"
+			width="96"
+			height="96"
+			class="h-24 w-24 rounded-3xl shadow-lg"
+		/>
 		<p
 			class="rounded-full border border-cover-voice-main/30 bg-cover-voice-main/10 px-4 py-1 text-sm font-medium text-cover-voice-main"
 		>
@@ -95,7 +102,7 @@
 		</p>
 		<div class="mt-8 grid gap-4 md:grid-cols-3">
 			{#each steps as step (step.n)}
-				<div class="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+				<div class="flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm">
 					<span
 						class="flex h-10 w-10 items-center justify-center rounded-full bg-cover-voice-main text-lg font-semibold text-white"
 						>{step.n}</span
@@ -112,7 +119,7 @@
 		<h2 class="text-center text-3xl font-semibold">Frequently asked questions</h2>
 		<div class="mt-8 flex flex-col gap-3">
 			{#each faqs as faq (faq.q)}
-				<details class="group rounded-lg border border-gray-200 bg-white px-5 py-4 shadow-sm">
+				<details class="group rounded-lg border border-border bg-card px-5 py-4 shadow-sm">
 					<summary
 						class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden"
 					>

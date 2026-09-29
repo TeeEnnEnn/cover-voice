@@ -16,6 +16,15 @@
 <svelte:head><title>{title}</title></svelte:head>
 <div class="flex min-h-screen flex-col">
 	<Card.Root class="mx-auto my-36 w-full max-w-sm">
+		<div class="flex justify-center pt-6">
+			<img
+				src="/Cover-Voice_192x192.svg"
+				alt="Cover Voice logo"
+				width="56"
+				height="56"
+				class="h-14 w-14 rounded-xl"
+			/>
+		</div>
 		<Card.Header>
 			<Card.Title class="text-2xl">{title}</Card.Title>
 			{#if description}

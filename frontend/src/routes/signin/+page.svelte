@@ -118,10 +118,10 @@
 			</Field>
 		</FieldGroup>
 	</form>
-	<p class="mt-4 text-sm text-gray-600">
+	<p class="mt-4 text-sm text-muted-foreground">
 		No account? <a href="/signup" class="underline">Sign up</a>.
 	</p>
-	<p class="mt-2 text-sm text-gray-600">
+	<p class="mt-2 text-sm text-muted-foreground">
 		Forgot your password? <a href="/forgot-password" class="underline">Reset it</a>.
 	</p>
 </AuthCard>

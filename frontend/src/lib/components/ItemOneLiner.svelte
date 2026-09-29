@@ -11,14 +11,14 @@
 </script>
 
 <div
-	class="flex items-center justify-between gap-2 rounded-lg border border-gray-400 px-3 py-1 hover:bg-gray-200"
+	class="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-1 hover:bg-accent"
 >
 	<span class="text-start text-muted-foreground">{name}</span>
 	<span class="flex shrink-0 items-center gap-2">
 		{#if usageBadge}
 			<span
 				title={usageBadge.title}
-				class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+				class="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
 			>
 				{usageBadge.text}
 			</span>

@@ -35,7 +35,7 @@
 		}}
 	>
 		<div
-			class="w-full max-w-md rounded-lg bg-white p-6"
+			class="w-full max-w-md rounded-lg bg-card p-6"
 			role="alertdialog"
 			tabindex="-1"
 			aria-modal="true"
@@ -44,7 +44,7 @@
 			onkeydown={(event) => event.stopPropagation()}
 		>
 			<h4 class="text-lg font-semibold">{heading}</h4>
-			<ul class="mt-3 flex max-h-48 flex-col gap-1 overflow-y-auto text-sm text-gray-700">
+			<ul class="mt-3 flex max-h-48 flex-col gap-1 overflow-y-auto text-sm text-muted-foreground">
 				{#each lines as line (line)}
 					<li>{line}</li>
 				{/each}

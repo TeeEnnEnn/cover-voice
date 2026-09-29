@@ -14,7 +14,7 @@
 	let busy = $state(false);
 </script>
 
-<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+<div class="rounded-lg border border-border bg-card p-4 shadow-sm">
 	<form
 		method="post"
 		action="?/updateLetter"

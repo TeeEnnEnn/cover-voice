@@ -33,12 +33,29 @@ async function deliver(input: SentEmail): Promise<void> {
 	await getSender()(input);
 }
 
+function logoUrl(): string | null {
+	const base = (process.env.BETTER_AUTH_URL ?? '').replace(/\/+$/, '');
+	return base ? `${base}/Cover-Voice_100x100.png` : null;
+}
+
 function layout(title: string, body: string): string {
-	return `<div style="font-family:system-ui,sans-serif;max-width:32rem;margin:0 auto;padding:1rem">
-<h2>${title}</h2>
+	const logo = logoUrl();
+	return `<div style="font-family:system-ui,sans-serif;background-color:#0c0f0a;margin:0;padding:2rem 1rem">
+<div style="max-width:32rem;margin:0 auto;text-align:center">${
+		logo
+			? `<img src="${logo}" alt="Cover Voice" width="72" height="72" style="border-radius:12px;display:block;margin:0 auto 1rem;" />`
+			: ''
+	}</div>
+<div style="font-family:system-ui,sans-serif;max-width:32rem;margin:0 auto;padding:1.5rem;background-color:#ffffff;border-radius:12px">
+<h2 style="color:#0c0f0a;margin-top:0">${title}</h2>
 ${body}
 <p style="color:#666;font-size:0.85rem">— Cover Voice</p>
+</div>
 </div>`;
+}
+
+function ctaButton(url: string, label: string): string {
+	return `<p><a href="${url}" style="display:inline-block;background-color:#ff206e;color:#ffffff;text-decoration:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:600">${label}</a></p>`;
 }
 
 /**
@@ -53,8 +70,8 @@ export async function sendVerificationEmail(input: { to: string; url: string }):
 		subject: 'Verify your Cover Voice email',
 		html: layout(
 			'Verify your email',
-			`<p>Click the link below to verify your email address:</p>
-<p><a href="${input.url}">Verify email</a></p>
+			`<p style="color:#333">Click the button below to verify your email address:</p>
+${ctaButton(input.url, 'Verify email')}
 <p style="color:#666;font-size:0.85rem">If you did not create this account, you can ignore this email.</p>`
 		)
 	});
@@ -66,8 +83,8 @@ export async function sendPasswordResetEmail(input: { to: string; url: string })
 		subject: 'Reset your Cover Voice password',
 		html: layout(
 			'Reset your password',
-			`<p>Click the link below to reset your password. It expires in one hour:</p>
-<p><a href="${input.url}">Reset password</a></p>
+			`<p style="color:#333">Click the button below to reset your password. It expires in one hour:</p>
+${ctaButton(input.url, 'Reset password')}
 <p style="color:#666;font-size:0.85rem">If you did not request this, you can ignore this email.</p>`
 		)
 	});

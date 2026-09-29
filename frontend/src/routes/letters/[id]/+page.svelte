@@ -496,7 +496,7 @@
 				{@const refs = refsIn(textFor(section.key))}
 				<div
 					id="section-{section.key}"
-					class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm"
+					class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm"
 				>
 					<div class="flex items-center justify-between gap-2">
 						<p class="font-medium">{section.prompt}</p>
@@ -531,7 +531,7 @@
 								<ul
 									role="listbox"
 									aria-label="{menu.kind === 'block' ? 'Block' : 'Variable'} suggestions"
-									class="absolute z-20 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+									class="absolute z-20 w-56 overflow-hidden rounded-lg border border-border bg-popover shadow-lg"
 									style="top: {menuPos.top}px; left: {menuPos.left}px;"
 								>
 									{#each menuItems as item, i (item.id)}
@@ -540,7 +540,7 @@
 												type="button"
 												class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm {i ===
 												menu.index
-													? 'bg-gray-100'
+													? 'bg-accent'
 													: ''}"
 												onmousedown={(e) => {
 													e.preventDefault();
@@ -570,7 +570,7 @@
 											: `"${ref.name}" does not exist yet — preview will fail`}
 										onclick={() => jumpToPanel(ref.kind)}
 										class="rounded-full border px-2 py-0.5 text-xs {ref.known
-											? 'border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200'
+											? 'border-border bg-muted text-muted-foreground hover:bg-accent'
 											: 'border-red-300 bg-red-50 text-red-700'}"
 									>
 										{ref.kind === 'block' ? `{%${ref.name}%}` : `{{${ref.name}}}`}
@@ -587,7 +587,7 @@
 								setAlign(section.key, e.currentTarget.value as Align);
 								onEditorInput();
 							}}
-							class="rounded-md border border-gray-300 px-2 py-1"
+							class="rounded-md border border-border bg-card px-2 py-1"
 						>
 							{#each aligns as align (align)}
 								<option value={align}>{align}</option>
@@ -598,7 +598,7 @@
 			{/each}
 		</div>
 
-		<div id="page-style" class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm">
+		<div id="page-style" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Page style</h3>
 				<div class="flex items-center gap-2">
@@ -632,7 +632,7 @@
 									pageConfig.font = e.currentTarget.value as PageFont;
 									onEditorInput();
 								}}
-								class="rounded-md border border-gray-300 px-2 py-1"
+								class="rounded-md border border-border bg-card px-2 py-1"
 							>
 								{#each pageFonts as font (font)}
 									<option value={font}>{font}</option>
@@ -648,7 +648,7 @@
 									pageConfig.pageSize = e.currentTarget.value as PageSizeOption;
 									onEditorInput();
 								}}
-								class="rounded-md border border-gray-300 px-2 py-1"
+								class="rounded-md border border-border bg-card px-2 py-1"
 							>
 								{#each pageSizes as size (size)}
 									<option value={size}>{size}</option>
@@ -691,7 +691,7 @@
 									pageConfig.fontColor = e.currentTarget.value;
 									onEditorInput();
 								}}
-								class="h-9 w-full rounded-md border border-gray-300 bg-white px-1"
+								class="h-9 w-full rounded-md border border-border bg-card px-1"
 							/>
 						</div>
 						<div class="flex flex-col gap-1">
@@ -704,7 +704,7 @@
 									pageConfig.backgroundColor = e.currentTarget.value;
 									onEditorInput();
 								}}
-								class="h-9 w-full rounded-md border border-gray-300 bg-white px-1"
+								class="h-9 w-full rounded-md border border-border bg-card px-1"
 							/>
 						</div>
 					</div>
@@ -732,7 +732,7 @@
 			{/if}
 		</div>
 
-		<div id="variables" class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm">
+		<div id="variables" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Variables</h3>
 				<Button
@@ -815,7 +815,7 @@
 			{/if}
 		</div>
 
-		<div id="blocks" class="rounded-lg border border-gray-200 bg-white px-3 py-3 shadow-sm">
+		<div id="blocks" class="rounded-lg border border-border bg-card px-3 py-3 shadow-sm">
 			<div class="flex items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Blocks</h3>
 				<Button
@@ -889,8 +889,7 @@
 
 	<div
 		id="preview"
-		class="w-full rounded-lg border border-gray-200 bg-[#eceae4] p-4 shadow-sm {mobileTab ===
-		'preview'
+		class="w-full rounded-lg border border-border bg-card p-4 shadow-sm {mobileTab === 'preview'
 			? 'block'
 			: 'hidden'} lg:sticky lg:top-4 lg:block lg:w-1/2 lg:self-start"
 		aria-busy={previewLoading}

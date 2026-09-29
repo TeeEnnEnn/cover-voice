@@ -63,7 +63,7 @@
 			</FieldGroup>
 		</form>
 	{/if}
-	<p class="mt-4 text-sm text-gray-600">
+	<p class="mt-4 text-sm text-muted-foreground">
 		Remembered it? <a href="/signin" class="underline">Sign in</a>.
 	</p>
 </AuthCard>

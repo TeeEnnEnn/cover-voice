@@ -131,7 +131,7 @@
 				</Field>
 			</FieldGroup>
 		</form>
-		<p class="mt-4 text-sm text-gray-600">
+		<p class="mt-4 text-sm text-muted-foreground">
 			Have an account? <a href="/signin" class="underline">Sign in</a>.
 		</p>
 	{/if}
