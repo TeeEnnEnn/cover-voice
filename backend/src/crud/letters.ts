@@ -1,5 +1,11 @@
 import { db } from '../db/index.js';
-import { blockTable, letterTable, variableTable } from '../db/schema.js';
+import {
+	blockTable,
+	letterBlockTable,
+	letterTable,
+	letterVariableTable,
+	variableTable
+} from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateLetterInput, LetterGeneration } from '../schemas/letters.js';
 import { collectLetterRefs } from '../services/replacement.js';
@@ -78,11 +84,23 @@ export async function updateLetter(
 }
 
 export async function deleteLetter(userId: string, id: string) {
-	const result = await db
-		.delete(letterTable)
-		.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
-		.returning();
-	return result.length === 0 ? null : result[0];
+	return db.transaction(async (tx) => {
+		const existing = (
+			await tx
+				.select({ id: letterTable.id })
+				.from(letterTable)
+				.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
+		)[0];
+		if (!existing) return null;
+		// FKs are restrict: clear this letter's junction rows first.
+		await tx.delete(letterBlockTable).where(eq(letterBlockTable.letterId, id));
+		await tx.delete(letterVariableTable).where(eq(letterVariableTable.letterId, id));
+		const deleted = await tx
+			.delete(letterTable)
+			.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
+			.returning();
+		return deleted.length === 0 ? null : deleted[0];
+	});
 }
 
 export async function getLetterById(userId: string, id: string) {

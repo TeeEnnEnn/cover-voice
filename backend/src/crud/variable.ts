@@ -1,5 +1,10 @@
 import { db } from '../db/index.js';
-import { variableTable } from '../db/schema.js';
+import {
+	blockTable,
+	blockVariableTable,
+	letterVariableTable,
+	variableTable
+} from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateVariableInput, UpdateVariableInput } from '../schemas/variables.js';
 import { resyncUserUsage } from '../services/usage-sync.js';
@@ -62,9 +67,25 @@ export async function updateVariable(userId: string, id: string, data: UpdateVar
 }
 
 export async function deleteVariable(userId: string, id: string) {
-	const result = await db
-		.delete(variableTable)
-		.where(and(eq(variableTable.userId, userId), eq(variableTable.id, id)))
-		.returning();
-	return result[0];
+	return db.transaction(async (tx) => {
+		const existing = (
+			await tx
+				.select({ id: variableTable.id })
+				.from(variableTable)
+				.where(and(eq(variableTable.userId, userId), eq(variableTable.id, id)))
+		)[0];
+		if (!existing) return undefined;
+		// FKs are restrict: clear junction rows explicitly, then resync so no
+		// dangling references linger in other blocks' or letters' links.
+		await tx.delete(blockVariableTable).where(eq(blockVariableTable.variableId, id));
+		await tx.delete(letterVariableTable).where(eq(letterVariableTable.variableId, id));
+		const deleted = (
+			await tx
+				.delete(variableTable)
+				.where(and(eq(variableTable.userId, userId), eq(variableTable.id, id)))
+				.returning()
+		)[0];
+		await resyncUserUsage(tx, userId);
+		return deleted;
+	});
 }

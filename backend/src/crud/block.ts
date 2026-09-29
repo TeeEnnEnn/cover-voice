@@ -1,5 +1,5 @@
 import { db } from '../db/index.js';
-import { blockTable } from '../db/schema.js';
+import { blockTable, blockVariableTable, letterBlockTable, variableTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateBlockInput, UpdateBlockInput } from '../schemas/blocks.js';
 import { resyncUserLetters, syncBlockVariables } from '../services/usage-sync.js';
@@ -56,9 +56,30 @@ export async function updateBlock(userId: string, id: string, data: UpdateBlockI
 }
 
 export async function deleteBlock(userId: string, id: string) {
-	const result = await db
-		.delete(blockTable)
-		.where(and(eq(blockTable.userId, userId), eq(blockTable.id, id)))
-		.returning();
-	return result[0];
+	return db.transaction(async (tx) => {
+		const existing = (
+			await tx
+				.select({ id: blockTable.id })
+				.from(blockTable)
+				.where(and(eq(blockTable.userId, userId), eq(blockTable.id, id)))
+		)[0];
+		if (!existing) return undefined;
+		// FKs are restrict: clear junction rows explicitly. Letters that
+		// referenced this block are resynced so variable-via-expansion links
+		// cannot go stale.
+		await tx.delete(blockVariableTable).where(eq(blockVariableTable.blockId, id));
+		await tx.delete(letterBlockTable).where(eq(letterBlockTable.blockId, id));
+		const deleted = (
+			await tx
+				.delete(blockTable)
+				.where(and(eq(blockTable.userId, userId), eq(blockTable.id, id)))
+				.returning()
+		)[0];
+		const [blocks, variables] = await Promise.all([
+			tx.select().from(blockTable).where(eq(blockTable.userId, userId)),
+			tx.select().from(variableTable).where(eq(variableTable.userId, userId))
+		]);
+		await resyncUserLetters(tx, userId, blocks, variables);
+		return deleted;
+	});
 }
