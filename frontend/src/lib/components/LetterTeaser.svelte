@@ -14,7 +14,7 @@
 	let busy = $state(false);
 </script>
 
-<div class="rounded-lg border border-gray-300 p-4">
+<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 	<form
 		method="post"
 		action="?/updateLetter"
@@ -70,7 +70,9 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input class="flex-3" type="submit" value={busy ? 'Saving…' : 'Update'} disabled={busy} />
+				<Button class="flex-3" type="submit" disabled={busy}>
+					{busy ? 'Saving…' : 'Update'}
+				</Button>
 				<Button
 					class="flex-1"
 					variant="destructive"
@@ -78,6 +80,7 @@
 					formaction="?/deleteLetter"
 					disabled={busy}
 					aria-label="Delete letter"
+					title="Delete letter"
 				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

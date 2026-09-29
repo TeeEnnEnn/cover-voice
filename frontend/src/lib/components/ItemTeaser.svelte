@@ -86,7 +86,7 @@
 	});
 </script>
 
-<div class="rounded-lg border border-gray-300 p-4">
+<div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
 	<form
 		method="post"
 		action={updateAction}
@@ -134,17 +134,15 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input
-					class="flex-3"
-					type="submit"
-					value={updating ? 'Updating…' : 'Update'}
-					disabled={updating}
-				/>
+				<Button class="flex-3" type="submit" disabled={updating}>
+					{updating ? 'Updating…' : 'Update'}
+				</Button>
 				<Button
 					class="flex-1"
 					variant="destructive"
 					type="button"
 					aria-label="Delete {kind}"
+					title="Delete {kind}"
 					onclick={() => {
 						confirmingDelete = true;
 					}}

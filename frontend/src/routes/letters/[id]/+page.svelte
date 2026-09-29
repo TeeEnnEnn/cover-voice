@@ -579,7 +579,7 @@
 									required
 								/>
 							</div>
-							<Input type="submit" value="Add" />
+							<Button type="submit" class="w-full">Add</Button>
 						</form>
 					{/if}
 				</div>
@@ -650,7 +650,7 @@
 								<Label for="blockValue">Block Value</Label>
 								<Input id="blockValue" name="blockValue" type="text" placeholder="value" required />
 							</div>
-							<Input type="submit" value="Add" />
+							<Button type="submit" class="w-full">Add</Button>
 						</form>
 					{/if}
 				</div>

@@ -2,6 +2,7 @@
 	import { Input } from '@/components/ui/input/index.js';
 	import { Textarea } from '@/components/ui/textarea/index.js';
 	import { Label } from '@/components/ui/label/index.js';
+	import Button from '@/components/ui/button/button.svelte';
 	import { slide } from 'svelte/transition';
 	import ItemSearch from '@/components/ItemSearch.svelte';
 	import LetterSearch from '@/components/LetterSearch.svelte';
@@ -83,24 +84,11 @@
 		}
 	});
 
-	const greeting_choices = [
-		'Welcome',
-		'Missed you',
-		'Hi there',
-		'Howdy',
-		"Didn't see you there",
-		'Heyy',
-		'Yo',
-		'Hi Hi',
-		'Hi',
-		"Where've you been"
-	];
+	const greeting_choices = ['Welcome', 'Welcome back', 'Hello', 'Good to see you'];
 	const second_greeting_choices = [
-		'What will you do today?',
-		'What interview will you land today?',
-		'Knock that cover letter out the park!',
-		'All the best today!',
-		'Give it a hundred and ten percent!'
+		'What will you work on today?',
+		'Pick up where you left off.',
+		'Your letters, blocks, and variables live here.'
 	];
 
 	const greeting = greeting_choices[Math.floor((Math.random() * 100) % greeting_choices.length)];
@@ -119,7 +107,7 @@
 			<div
 				class="flex flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm lg:col-span-2"
 			>
-				<h3 class="text-2xl font-thin">Letters</h3>
+				<h3 class="text-lg font-semibold">Letters</h3>
 				<div>
 					{#if letterError}
 						<p class="text-lg font-medium text-red-400">{letterError.error.message}</p>
@@ -165,11 +153,9 @@
 									<Label for="letterDescription" class="text-lg font-light">Description</Label>
 									<Textarea name="letterDescription" id="letterDescription" />
 								</div>
-								<Input
-									type="submit"
-									value={letterSubmitting ? 'Creating…' : 'Create'}
-									disabled={letterSubmitting}
-								/>
+								<Button type="submit" disabled={letterSubmitting}
+									>{letterSubmitting ? 'Creating…' : 'Create'}</Button
+								>
 							</form>
 						</div>
 					{/if}
@@ -179,7 +165,7 @@
 				<div
 					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
 				>
-					<h3 class="text-2xl font-thin">Blocks</h3>
+					<h3 class="text-lg font-semibold">Blocks</h3>
 					<div>
 						{#if blockError}
 							<p class="text-lg font-medium text-red-400">{blockError.error.message}</p>
@@ -227,11 +213,9 @@
 										<Label for="blockValue" class="text-lg font-light">block value</Label>
 										<Textarea name="blockValue" id="blockValue" required />
 									</div>
-									<Input
-										type="submit"
-										value={blockSubmitting ? 'Creating…' : 'Create'}
-										disabled={blockSubmitting}
-									/>
+									<Button type="submit" disabled={blockSubmitting}
+										>{blockSubmitting ? 'Creating…' : 'Create'}</Button
+									>
 								</form>
 							</div>
 						{/if}
@@ -240,7 +224,7 @@
 				<div
 					class="flex flex-1 flex-col gap-6 rounded-lg border border-gray-200 bg-white px-4 py-4 shadow-sm"
 				>
-					<h3 class="text-2xl font-thin">Variables</h3>
+					<h3 class="text-lg font-semibold">Variables</h3>
 					<div>
 						{#if variableError}
 							<p class="text-lg font-medium text-red-400">{variableError.error.message}</p>
@@ -288,11 +272,9 @@
 										<Label for="variableValue" class="text-lg font-light">Value</Label>
 										<Textarea name="variableValue" id="variableValue" required />
 									</div>
-									<Input
-										type="submit"
-										value={variableSubmitting ? 'Creating…' : 'Create'}
-										disabled={variableSubmitting}
-									/>
+									<Button type="submit" disabled={variableSubmitting}
+										>{variableSubmitting ? 'Creating…' : 'Create'}</Button
+									>
 								</form>
 							</div>
 						{/if}
