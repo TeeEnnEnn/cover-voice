@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Response } from 'express';
 import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import {
@@ -7,19 +8,19 @@ import {
 	generateLetter,
 	getLetterById,
 	getLetters,
+	resolveAndRender,
 	updateLetter
 } from '../crud/letters.js';
+import type { CollectLetterRefsError } from '../services/replacement.js';
 import { getLetterUsage } from '../crud/usage.js';
 import {
 	letterSchema,
 	letterListSchema,
 	createLetterSchema,
 	updateLetterSchema,
-	generateLetterSchema,
-	letterGenerationSchema
+	generateLetterSchema
 } from '../schemas/letters.js';
 import { letterUsageSchema } from '../schemas/usage.js';
-import { renderLetterPdf } from '../services/pdf.js';
 import { idParamSchema, paginationQuerySchema, validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { isUniqueViolation, serializeTimestamps } from '../crud/helpers.js';
@@ -173,7 +174,7 @@ registry.registerPath({
 registry.registerPath({
 	method: 'post',
 	path: '/api/letters/{id}/generate',
-	summary: 'Generate letter content from pinned blocks/variables.',
+	summary: 'Generate letter content, persist it, and return the rendered PDF.',
 	tags: ['letters'],
 	security: [{ cookieAuth: [] }],
 	request: {
@@ -184,11 +185,55 @@ registry.registerPath({
 	},
 	responses: {
 		200: {
-			description: 'The generated letter',
-			content: { 'application/json': { schema: letterSchema } }
+			description: 'The rendered PDF (also persisted as generatedContent)',
+			content: {
+				'application/pdf': {
+					schema: { type: 'string', format: 'binary' }
+				}
+			}
 		},
 		422: {
 			description: 'Unknown block/variable reference in a section; nothing was written',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'post',
+	path: '/api/letters/{id}/preview',
+	summary: 'Render editor content to PDF without persisting anything.',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: idParamSchema,
+		body: {
+			content: { 'application/json': { schema: generateLetterSchema } }
+		}
+	},
+	responses: {
+		200: {
+			description: 'The rendered PDF (ephemeral: nothing is written)',
+			content: {
+				'application/pdf': {
+					schema: { type: 'string', format: 'binary' }
+				}
+			}
+		},
+		422: {
+			description: 'Unknown block/variable reference in a section',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		},
 		404: {
@@ -222,43 +267,6 @@ registry.registerPath({
 		},
 		404: {
 			description: 'Letter does not exist',
-			content: { 'application/json': { schema: validationErrorSchema } }
-		},
-		401: {
-			description: 'Not authenticated',
-			content: { 'application/json': { schema: validationErrorSchema } }
-		},
-		403: {
-			description: 'Email not verified',
-			content: { 'application/json': { schema: validationErrorSchema } }
-		}
-	}
-});
-
-registry.registerPath({
-	method: 'get',
-	path: '/api/letters/{id}/export',
-	summary: 'Download the generated letter as PDF.',
-	tags: ['letters'],
-	security: [{ cookieAuth: [] }],
-	request: {
-		params: idParamSchema
-	},
-	responses: {
-		200: {
-			description: 'The generated letter as PDF',
-			content: {
-				'application/pdf': {
-					schema: { type: 'string', format: 'binary' }
-				}
-			}
-		},
-		404: {
-			description: 'Letter does not exist',
-			content: { 'application/json': { schema: validationErrorSchema } }
-		},
-		409: {
-			description: 'Letter has not been generated yet',
 			content: { 'application/json': { schema: validationErrorSchema } }
 		},
 		401: {
@@ -329,36 +337,30 @@ router.get(
 	}
 );
 
-router.get(
-	'/letters/:id/export',
-	requireAuth,
-	validate({ params: idParamSchema }),
-	async (req, res) => {
-		const userId = res.locals.user!.id;
-		const letterId = req.params.id as string;
-		const letter = await getLetterById(userId, letterId);
-		if (!letter) {
-			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
-			return;
+function pdfFilename(title: string): string {
+	return `${title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
+}
+
+function sendPdf(
+	res: Response,
+	pdf: Buffer,
+	filename: string,
+	disposition: 'inline' | 'attachment'
+): void {
+	res.setHeader('Content-Type', 'application/pdf');
+	res.setHeader('Content-Disposition', `${disposition}; filename="${filename}"`);
+	res.setHeader('Content-Length', pdf.length);
+	res.status(200).send(pdf);
+}
+
+function referenceError(res: Response, error: CollectLetterRefsError): void {
+	res.status(422).json({
+		error: {
+			message: error.hint,
+			details: [{ path: `sections.${error.section}`, message: error.hint }]
 		}
-		const parsed = letterGenerationSchema.safeParse(letter.generatedContent);
-		if (!parsed.success) {
-			res.status(409).json({
-				error: {
-					message: 'Letter has not been generated yet. Generate it before exporting.',
-					details: []
-				}
-			});
-			return;
-		}
-		const pdf = await renderLetterPdf(parsed.data);
-		const filename = `${letter.title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
-		res.setHeader('Content-Type', 'application/pdf');
-		res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-		res.setHeader('Content-Length', pdf.length);
-		res.status(200).send(pdf);
-	}
-);
+	});
+}
 
 router.delete(
 	'/letters/:id',
@@ -413,15 +415,33 @@ router.post(
 			return;
 		}
 		if (!result.ok) {
-			res.status(422).json({
-				error: {
-					message: result.error.hint,
-					details: [{ path: `sections.${result.error.section}`, message: result.error.hint }]
-				}
-			});
+			referenceError(res, result.error);
 			return;
 		}
-		res.status(200).json(serializeTimestamps(result.letter));
+		sendPdf(res, result.pdf, pdfFilename(result.letter.title), 'attachment');
+	}
+);
+
+router.post(
+	'/letters/:id/preview',
+	requireAuth,
+	validate({ params: idParamSchema, body: generateLetterSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const letter = await getLetterById(userId, letterId);
+		if (!letter) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		// Ephemeral: resolves and renders without touching rawContent,
+		// generatedContent, or the junction tables.
+		const resolved = await resolveAndRender(userId, req.body);
+		if (!resolved.ok) {
+			referenceError(res, resolved.error);
+			return;
+		}
+		sendPdf(res, resolved.value.pdf, pdfFilename(letter.title), 'inline');
 	}
 );
 

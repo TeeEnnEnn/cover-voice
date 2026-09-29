@@ -138,33 +138,5 @@ export const actions = {
 			return fail(400, { action: 'saveSections', message: 'Failed to save sections.' });
 		}
 		return { action: 'saveSections' as const, success: true, message: 'Sections saved.' };
-	},
-	generate: async ({ request, fetch, params }) => {
-		const cookie = request.headers.get('cookie');
-		await requireUser(fetch, cookie);
-		const formData = await request.formData();
-		const content = buildContent(formData);
-
-		const api = createApiClient(fetch, cookie);
-		const { data, error: err } = await api.POST('/api/letters/{id}/generate', {
-			params: { path: { id: params.id } },
-			body: content
-		});
-
-		if (err) {
-			const message =
-				typeof err === 'object' && err !== null && 'message' in err
-					? String((err as { message: unknown }).message)
-					: 'Failed to generate letter.';
-			return fail(422, { action: 'generate', message });
-		}
-		return {
-			action: 'generate' as const,
-			success: true,
-			letter: data as Letter,
-			message: 'Letter generated.'
-		};
 	}
 } satisfies Actions;
-
-type Letter = components['schemas']['Letter'];

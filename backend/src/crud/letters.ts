@@ -10,6 +10,7 @@ import { desc, eq, and } from 'drizzle-orm';
 import type { CreateLetterInput, LetterGeneration } from '../schemas/letters.js';
 import { collectLetterRefs } from '../services/replacement.js';
 import type { CollectLetterRefsError } from '../services/replacement.js';
+import { renderLetterPdf } from '../services/pdf.js';
 import {
 	syncLetterFromSections,
 	syncLetterLinks,
@@ -113,14 +114,76 @@ export async function getLetterById(userId: string, id: string) {
 }
 
 export type GenerateLetterResult =
-	| { ok: true; letter: typeof letterTable.$inferSelect; error: null }
+	| { ok: true; letter: typeof letterTable.$inferSelect; pdf: Buffer; error: null }
 	| { ok: false; letter: null; error: CollectLetterRefsError };
+
+export type ResolveAndRenderResult =
+	| {
+			ok: true;
+			value: {
+				blockIds: Array<string>;
+				variableIds: Array<string>;
+				generated: LetterGeneration;
+				pdf: Buffer;
+			};
+			error: null;
+	  }
+	| { ok: false; value: null; error: CollectLetterRefsError };
+
+/**
+ * Shared resolve → render pipeline behind both letter endpoints: resolves
+ * section references against the user's blocks/variables and renders the
+ * result to PDF. Pure read path — writes nothing to the database.
+ */
+export async function resolveAndRender(
+	userId: string,
+	letterGenerationContent: LetterGeneration
+): Promise<ResolveAndRenderResult> {
+	const [blocks, variables] = await Promise.all([
+		db.select().from(blockTable).where(eq(blockTable.userId, userId)),
+		db.select().from(variableTable).where(eq(variableTable.userId, userId))
+	]);
+
+	const collected = collectLetterRefs(letterGenerationContent.sections, blocks, variables);
+	if (!collected.ok) {
+		return { ok: false, value: null, error: collected.error };
+	}
+
+	const generated: LetterGeneration = {
+		config: letterGenerationContent.config,
+		sections: {
+			header: {
+				text: collected.value.replacedText.header,
+				align: letterGenerationContent.sections.header.align
+			},
+			body: {
+				text: collected.value.replacedText.body,
+				align: letterGenerationContent.sections.body.align
+			},
+			footer: {
+				text: collected.value.replacedText.footer,
+				align: letterGenerationContent.sections.footer.align
+			}
+		}
+	};
+	const pdf = await renderLetterPdf(generated);
+	return {
+		ok: true,
+		value: {
+			blockIds: collected.value.blockIds,
+			variableIds: collected.value.variableIds,
+			generated,
+			pdf
+		},
+		error: null
+	};
+}
 
 /**
  * Renders a letter's sections and reconciles its junction rows. Returns null
  * when the letter doesn't exist. On a reference error nothing is written —
  * neither content nor junction rows — so the tables keep reflecting the last
- * successful generation.
+ * successful generation. The returned pdf renders the persisted content.
  */
 export async function generateLetter(
 	userId: string,
@@ -136,54 +199,32 @@ export async function generateLetter(
 		return null;
 	}
 
-	const [blocks, variables] = await Promise.all([
-		db.select().from(blockTable).where(eq(blockTable.userId, userId)),
-		db.select().from(variableTable).where(eq(variableTable.userId, userId))
-	]);
-
-	const collected = collectLetterRefs(letterGenerationContent.sections, blocks, variables);
-	if (!collected.ok) {
-		return { ok: false, letter: null, error: collected.error };
+	const resolved = await resolveAndRender(userId, letterGenerationContent);
+	if (!resolved.ok) {
+		return { ok: false, letter: null, error: resolved.error };
 	}
 
-	return db.transaction(async (tx) => {
+	const updated = await db.transaction(async (tx) => {
 		// Delete-all existing links first, then insert the fresh set, so the
 		// junction tables always reflect the true usage of this generation.
 		await syncLetterLinks(
 			tx,
 			userId,
 			letterId,
-			collected.value.blockIds,
-			collected.value.variableIds
+			resolved.value.blockIds,
+			resolved.value.variableIds
 		);
 
-		const generatedContent: LetterGeneration = {
-			config: letterGenerationContent.config,
-			sections: {
-				header: {
-					text: collected.value.replacedText.header,
-					align: letterGenerationContent.sections.header.align
-				},
-				body: {
-					text: collected.value.replacedText.body,
-					align: letterGenerationContent.sections.body.align
-				},
-				footer: {
-					text: collected.value.replacedText.footer,
-					align: letterGenerationContent.sections.footer.align
-				}
-			}
-		};
-
-		const updated = await tx
+		const rows = await tx
 			.update(letterTable)
 			.set({
 				rawContent: letterGenerationContent,
-				generatedContent
+				generatedContent: resolved.value.generated
 			})
 			.where(and(eq(letterTable.userId, userId), eq(letterTable.id, letterId)))
 			.returning();
-		if (updated.length === 0) return null;
-		return { ok: true, letter: updated[0], error: null };
+		return rows.length === 0 ? null : rows[0];
 	});
+	if (!updated) return null;
+	return { ok: true, letter: updated, error: null, pdf: resolved.value.pdf };
 }

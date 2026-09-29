@@ -5,20 +5,149 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import type { components } from '$lib/api/schema';
+
+	type LetterGeneration = components['schemas']['LetterGenerationSchema'];
+	type Align = LetterGeneration['sections']['header']['align'];
 
 	let { data, form } = $props();
 
 	let settingNewVariable = $state(false);
 	let settingNewBlock = $state(false);
 
-	let rawSections = $derived(
-		data.letter.rawContent?.sections ?? {
-			header: { text: '', align: 'left' },
-			body: { text: '', align: 'left' },
-			footer: { text: '', align: 'left' }
+	const initialSections = data.letter.rawContent?.sections ?? {
+		header: { text: '', align: 'left' as Align },
+		body: { text: '', align: 'left' as Align },
+		footer: { text: '', align: 'left' as Align }
+	};
+
+	let headerText = $state(initialSections.header.text ?? '');
+	let bodyText = $state(initialSections.body.text ?? '');
+	let footerText = $state(initialSections.footer.text ?? '');
+	let headerAlign = $state<Align>(initialSections.header.align ?? 'left');
+	let bodyAlign = $state<Align>(initialSections.body.align ?? 'left');
+	let footerAlign = $state<Align>(initialSections.footer.align ?? 'left');
+
+	let previewUrl = $state<string | null>(null);
+	let previewLoading = $state(false);
+	let previewHint = $state<string | null>('Press Update Preview to render the current sections.');
+	let downloading = $state(false);
+	let downloadError = $state<string | null>(null);
+
+	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+	let activeController: AbortController | null = null;
+	const letterId = data.letter.id;
+
+	const DEFAULT_CONFIG = {
+		font: 'Helvetica',
+		fontSize: 12,
+		fontColor: '#000000',
+		backgroundColor: '#ffffff',
+		lineHeight: 1.5,
+		textDirection: 'ltr',
+		pageSize: 'A4',
+		marginLeft: 36,
+		marginRight: 36,
+		marginTop: 36,
+		marginBottom: 36
+	} as const;
+
+	function currentContent(): LetterGeneration {
+		return {
+			config: { ...DEFAULT_CONFIG },
+			sections: {
+				header: { text: headerText || null, align: headerAlign },
+				body: { text: bodyText || null, align: bodyAlign },
+				footer: { text: footerText || null, align: footerAlign }
+			}
+		};
+	}
+
+	async function fetchPreview(content: LetterGeneration) {
+		activeController?.abort();
+		const controller = new AbortController();
+		activeController = controller;
+		previewLoading = true;
+		previewHint = null;
+		try {
+			const response = await fetch(`/api/letters/${letterId}/preview`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(content),
+				signal: controller.signal
+			});
+			if (!response.ok) {
+				// Transient failure (e.g. half-typed {% %}%}): keep the last good
+				// PDF and show a non-blocking hint instead of an error state.
+				previewHint = 'Preview paused — check block/variable names, then update again.';
+				return;
+			}
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			if (previewUrl) URL.revokeObjectURL(previewUrl);
+			previewUrl = url;
+		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') return;
+			previewHint = 'Preview failed. Press Update Preview to retry.';
+		} finally {
+			if (activeController === controller) activeController = null;
+			previewLoading = false;
 		}
-	);
-	let generatedSections = $derived(data.letter.generatedContent?.sections ?? null);
+	}
+
+	function onEditorInput() {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		debounceTimer = setTimeout(() => fetchPreview(currentContent()), 1000);
+	}
+
+	async function updatePreviewNow() {
+		if (debounceTimer) clearTimeout(debounceTimer);
+		await fetchPreview(currentContent());
+	}
+
+	function sanitizeFilename(title: string): string {
+		return `${title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
+	}
+
+	async function downloadPdf() {
+		downloading = true;
+		downloadError = null;
+		if (debounceTimer) clearTimeout(debounceTimer);
+		try {
+			const response = await fetch(`/api/letters/${letterId}/generate`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(currentContent())
+			});
+			if (!response.ok) {
+				let message = 'Download failed. Check block/variable names and try again.';
+				try {
+					const errBody = await response.json();
+					if (errBody?.error?.message) message = errBody.error.message;
+					if (errBody?.error?.details?.[0]?.path) {
+						message = `${message} (${errBody.error.details[0].path})`;
+					}
+				} catch {
+					// keep default
+				}
+				downloadError = message;
+				return;
+			}
+			const blob = await response.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = sanitizeFilename(data.letter.title);
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+		} finally {
+			downloading = false;
+		}
+	}
 
 	const sectionMeta = [
 		{ key: 'header', title: 'Header', prompt: 'How will you start your cover letter off?' },
@@ -26,6 +155,23 @@
 		{ key: 'footer', title: 'Footer', prompt: 'How will you end your cover letter?' }
 	] as const;
 	const aligns = ['left', 'center', 'right', 'justify'] as const;
+
+	function textFor(key: 'header' | 'body' | 'footer'): string {
+		return key === 'header' ? headerText : key === 'body' ? bodyText : footerText;
+	}
+	function setText(key: 'header' | 'body' | 'footer', value: string) {
+		if (key === 'header') headerText = value;
+		else if (key === 'body') bodyText = value;
+		else footerText = value;
+	}
+	function alignFor(key: 'header' | 'body' | 'footer'): Align {
+		return key === 'header' ? headerAlign : key === 'body' ? bodyAlign : footerAlign;
+	}
+	function setAlign(key: 'header' | 'body' | 'footer', value: Align) {
+		if (key === 'header') headerAlign = value;
+		else if (key === 'body') bodyAlign = value;
+		else footerAlign = value;
+	}
 </script>
 
 <div class="container mx-auto my-8 flex flex-col gap-4 px-4 lg:flex-row">
@@ -51,9 +197,8 @@
 			</p>
 		{/if}
 
-		<form method="post" class="flex flex-col gap-4" use:enhance>
+		<form method="post" action="?/saveSections" class="flex flex-col gap-4" use:enhance>
 			{#each sectionMeta as section (section.key)}
-				{@const current = rawSections[section.key]}
 				<div id="section-{section.key}" class="rounded-lg border border-gray-200 px-3 py-3">
 					<p class="font-medium">{section.prompt}</p>
 					<div class="mt-2 flex flex-col gap-2">
@@ -61,7 +206,11 @@
 						<Textarea
 							id="{section.key}Text"
 							name="{section.key}Text"
-							value={current.text ?? ''}
+							value={textFor(section.key)}
+							oninput={(e) => {
+								setText(section.key, e.currentTarget.value);
+								onEditorInput();
+							}}
 							placeholder={'Use {%block%} and {{variable}} references'}
 							rows={4}
 						/>
@@ -69,7 +218,11 @@
 						<select
 							id="{section.key}Align"
 							name="{section.key}Align"
-							value={current.align ?? 'left'}
+							value={alignFor(section.key)}
+							onchange={(e) => {
+								setAlign(section.key, e.currentTarget.value as Align);
+								onEditorInput();
+							}}
 							class="rounded-md border border-gray-300 px-2 py-1"
 						>
 							{#each aligns as align (align)}
@@ -80,10 +233,7 @@
 				</div>
 			{/each}
 			<div class="flex gap-2">
-				<Button class="flex-1" variant="outline" type="submit" formaction="?/saveSections">
-					Save sections
-				</Button>
-				<Button class="flex-1" type="submit" formaction="?/generate">Generate letter</Button>
+				<Input class="flex-1" type="submit" value="Save sections" />
 			</div>
 		</form>
 
@@ -185,30 +335,39 @@
 	</div>
 
 	<div id="preview" class="w-full rounded-lg bg-gray-200 p-4 lg:w-1/2">
-		<div class="mb-3 flex items-center justify-between">
+		<div class="mb-3 flex items-center justify-between gap-2">
 			<h3 class="text-lg font-semibold">Preview</h3>
-			{#if generatedSections}
-				<Button href={`/api/letters/${data.letter.id}/export`} variant="outline"
-					>Download PDF</Button
+			<div class="flex gap-2">
+				<Button
+					variant="outline"
+					type="button"
+					disabled={previewLoading}
+					onclick={updatePreviewNow}
 				>
-			{/if}
+					{previewLoading ? 'Rendering…' : 'Update Preview'}
+				</Button>
+				<Button type="button" disabled={downloading} onclick={downloadPdf}>
+					{downloading ? 'Generating…' : 'Download'}
+				</Button>
+			</div>
 		</div>
-		{#if generatedSections}
-			{#each sectionMeta as section (section.key)}
-				{@const text = generatedSections[section.key].text}
-				{#if text}
-					<div
-						class="mb-4 rounded bg-white p-3"
-						style="text-align: {generatedSections[section.key].align}"
-					>
-						<p class="text-xs text-muted-foreground">{section.title}</p>
-						<p class="whitespace-pre-wrap">{text}</p>
-					</div>
-				{/if}
-			{/each}
+		{#if downloadError}
+			<p
+				class="mb-2 rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-600"
+				role="alert"
+			>
+				{downloadError}
+			</p>
+		{/if}
+		{#if previewHint}
+			<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
+		{/if}
+		{#if previewUrl}
+			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full rounded bg-white"
+			></iframe>
 		{:else}
 			<p class="text-sm text-muted-foreground">
-				Nothing generated yet. Write your sections, then press Generate letter.
+				Nothing rendered yet. Write your sections, then press Update Preview.
 			</p>
 		{/if}
 	</div>

@@ -109,6 +109,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
         };
         put?: never;
@@ -150,6 +167,23 @@ export interface paths {
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -210,6 +244,23 @@ export interface paths {
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -453,6 +504,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
                 /** @description Block does not exist */
                 404: {
                     headers: {
@@ -526,6 +594,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
             };
         };
         put?: never;
@@ -571,6 +656,23 @@ export interface paths {
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -814,6 +916,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
                 /** @description variable does not exist */
                 404: {
                     headers: {
@@ -872,6 +991,23 @@ export interface paths {
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -947,6 +1083,23 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
                 /** @description Letter title already exists */
                 409: {
                     headers: {
@@ -1002,6 +1155,23 @@ export interface paths {
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1184,7 +1354,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Generate letter content from pinned blocks/variables. */
+        /** Generate letter content, persist it, and return the rendered PDF. */
         post: {
             parameters: {
                 query?: never;
@@ -1200,17 +1370,34 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The generated letter */
+                /** @description The rendered PDF (also persisted as generatedContent) */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Letter"];
+                        "application/pdf": string;
                     };
                 };
                 /** @description Not authenticated */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1244,6 +1431,116 @@ export interface paths {
                     };
                 };
                 /** @description Unknown block/variable reference in a section; nothing was written */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/letters/{id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render editor content to PDF without persisting anything. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["GenerateLetterBody"];
+                };
+            };
+            responses: {
+                /** @description The rendered PDF (ephemeral: nothing is written) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/pdf": string;
+                    };
+                };
+                /** @description Not authenticated */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Email not verified */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Letter does not exist */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            error: {
+                                message: string;
+                                details: {
+                                    path: string;
+                                    message: string;
+                                }[];
+                            };
+                        };
+                    };
+                };
+                /** @description Unknown block/variable reference in a section */
                 422: {
                     headers: {
                         [name: string]: unknown;
@@ -1313,63 +1610,8 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Letter does not exist */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/letters/{id}/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Download the generated letter as PDF. */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The generated letter as PDF */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/pdf": string;
-                    };
-                };
-                /** @description Not authenticated */
-                401: {
+                /** @description Email not verified */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1387,23 +1629,6 @@ export interface paths {
                 };
                 /** @description Letter does not exist */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            error: {
-                                message: string;
-                                details: {
-                                    path: string;
-                                    message: string;
-                                }[];
-                            };
-                        };
-                    };
-                };
-                /** @description Letter has not been generated yet */
-                409: {
                     headers: {
                         [name: string]: unknown;
                     };

@@ -3,7 +3,7 @@ import { clientsClaim } from 'workbox-core';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { NetworkFirst, NetworkOnly } from 'workbox-strategies';
+import { NetworkFirst } from 'workbox-strategies';
 
 declare const self: ServiceWorkerGlobalScope & {
 	__WB_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -35,9 +35,6 @@ registerRoute(
 		{ denylist: [/^\/api/] }
 	)
 );
-
-// Never cache file downloads.
-registerRoute(({ url }) => url.pathname.endsWith('/export'), new NetworkOnly(), 'GET');
 
 // API reads: fresh when possible, briefly stale when offline. Mutations
 // (POST/PATCH/DELETE) never match a GET-only route, so they are never cached.
