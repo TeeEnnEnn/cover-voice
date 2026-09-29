@@ -22,8 +22,10 @@ export default defineConfig({
 			}
 		}),
 		SvelteKitPWA({
+			srcDir: 'src',
+			filename: 'service-worker.ts',
+			strategies: 'injectManifest',
 			registerType: 'autoUpdate',
-			includeAssets: ['offline.html'],
 			manifest: {
 				name: 'Cover Voice',
 				short_name: 'Cover Voice',
@@ -44,28 +46,9 @@ export default defineConfig({
 					}
 				]
 			},
-			workbox: {
-				// Offline navigations fall back to a static page; API traffic is
-				// never served stale and mutations are never cached.
-				navigateFallback: 'offline.html',
-				navigateFallbackDenylist: [/^\/api/],
-				runtimeCaching: [
-					{
-						// Never cache file downloads.
-						urlPattern: ({ url }) => url.pathname.endsWith('/export'),
-						handler: 'NetworkOnly'
-					},
-					{
-						urlPattern: ({ request, url }) =>
-							request.method === 'GET' && url.pathname.startsWith('/api/'),
-						handler: 'NetworkFirst',
-						options: {
-							cacheName: 'api-get',
-							expiration: { maxEntries: 100, maxAgeSeconds: 5 * 60 },
-							networkTimeoutSeconds: 5
-						}
-					}
-				]
+			injectManifest: {
+				// Precached below in src/sw.ts via self.__WB_MANIFEST.
+				globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}']
 			},
 			devOptions: {
 				enabled: false
