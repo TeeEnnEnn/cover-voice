@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -49,6 +49,7 @@
 				error = authError.message ?? 'Failed to sign up. Please try again.';
 				return;
 			}
+			await invalidateAll();
 			await goto('/me');
 		} finally {
 			submitting = false;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Label } from '@/components/ui/label/index.js';
 	import Button from './ui/button/button.svelte';
@@ -37,6 +38,7 @@
 
 	let isEditing = $state(false);
 	let confirmingDelete = $state(false);
+	let updating = $state(false);
 
 	let updateAction = $derived(kind === 'block' ? '?/updateBlock' : '?/updateVariable');
 	let deleteAction = $derived(kind === 'block' ? '?/deleteBlock' : '?/deleteVariable');
@@ -83,7 +85,19 @@
 </script>
 
 <div class="rounded-lg border border-gray-300 p-4">
-	<form method="post" action={updateAction} class="flex flex-col gap-4">
+	<form
+		method="post"
+		action={updateAction}
+		class="flex flex-col gap-4"
+		use:enhance={() => {
+			updating = true;
+			return async ({ update }) => {
+				updating = false;
+				isEditing = false;
+				await update();
+			};
+		}}
+	>
 		<div class="flex flex-col gap-2">
 			<Label for="blockName-{id}">Name</Label>
 			{#if isEditing}
@@ -118,7 +132,7 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input class="flex-3" type="submit" value="Update" />
+				<Input class="flex-3" type="submit" value={updating ? 'Updating…' : 'Update'} disabled={updating} />
 				<Button
 					class="flex-1"
 					variant="destructive"

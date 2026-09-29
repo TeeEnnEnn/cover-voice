@@ -42,5 +42,9 @@
 		>
 			<ItemOneLiner name={item.name} lastUpdated={item.updatedAt} />
 		</button>
+	{:else}
+		<p class="text-sm text-muted-foreground">
+			{items.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
+		</p>
 	{/each}
 </div>

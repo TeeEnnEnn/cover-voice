@@ -15,5 +15,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /app/build ./build
 COPY --from=prod-deps /app/node_modules ./node_modules
+USER node
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO /dev/null http://localhost:3000/ || exit 1
 CMD ["node", "build/index.js"]

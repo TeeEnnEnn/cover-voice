@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
@@ -24,6 +24,7 @@
 				error = authError.message ?? 'Something went wrong';
 				return;
 			}
+			await invalidateAll();
 			await goto('/me');
 		} finally {
 			submitting = false;

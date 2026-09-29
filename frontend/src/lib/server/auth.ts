@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { createApiClient } from '$lib/api/client';
 
 /**
@@ -16,13 +16,18 @@ export async function requireUser(
 	loginPath = '/signin'
 ) {
 	const api = createApiClient(svelteFetch, cookie);
-	const { data, error } = await api.GET('/api/me');
+	let result;
+	try {
+		result = await api.GET('/api/me');
+	} catch {
+		throw error(503, 'Backend unavailable');
+	}
 
-	if (error || !data?.user) {
+	if (result.error || !result.data?.user) {
 		throw redirect(303, loginPath);
 	}
 
-	return data.user;
+	return result.data.user;
 }
 
 /**
@@ -37,14 +42,31 @@ export async function requireNoUser(
 	loggedInPath = '/me'
 ): Promise<void> {
 	const api = createApiClient(svelteFetch, cookie);
-	const { data } = await api.GET('/api/me');
+	let data;
+	try {
+		({ data } = await api.GET('/api/me'));
+	} catch {
+		throw error(503, 'Backend unavailable');
+	}
 	if (data?.user) {
 		throw redirect(302, loggedInPath);
 	}
 }
 
-export async function getCurrentUser(svelteFetch: typeof fetch, cookie?: string | null) {
+export type SessionState = {
+	user: { id: string; name: string; email: string } | null;
+	backendDown: boolean;
+};
+
+export async function getCurrentUser(
+	svelteFetch: typeof fetch,
+	cookie?: string | null
+): Promise<SessionState> {
 	const api = createApiClient(svelteFetch, cookie);
-	const { data } = await api.GET('/api/me');
-	return data?.user ?? null;
+	try {
+		const { data } = await api.GET('/api/me');
+		return { user: data?.user ?? null, backendDown: false };
+	} catch {
+		return { user: null, backendDown: true };
+	}
 }

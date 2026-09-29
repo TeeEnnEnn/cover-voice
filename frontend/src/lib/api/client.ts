@@ -22,7 +22,4 @@ export function createApiClient(customFetch?: typeof fetch, cookie?: string | nu
 
 export type ApiClient = ReturnType<typeof createApiClient>;
 
-// Default singleton
-export const api = createApiClient();
-
 export type { paths };
