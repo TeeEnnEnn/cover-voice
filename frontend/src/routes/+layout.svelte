@@ -3,9 +3,25 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
 	import { goto, invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { authClient } from '@/auth-client';
 
 	let { data, children }: LayoutProps = $props();
+
+	let swNeedRefresh = $state(false);
+	let updateSW: (() => Promise<void>) | null = $state(null);
+
+	onMount(async () => {
+		if (!browser || !('serviceWorker' in navigator)) return;
+		const { useRegisterSW } = await import('virtual:pwa-register/svelte');
+		const registration = useRegisterSW({ immediate: true });
+		updateSW = registration.updateServiceWorker;
+		// `needRefresh` is a Svelte store in the virtual module.
+		registration.needRefresh.subscribe((value: boolean) => {
+			swNeedRefresh = value;
+		});
+	});
 
 	async function signOut() {
 		try {
@@ -47,6 +63,17 @@
 	{#if data.backendDown}
 		<p class="bg-amber-100 px-4 py-1 text-center text-sm text-amber-800" role="alert">
 			Backend unreachable — showing a signed-out view. Your session may still be valid.
+		</p>
+	{/if}
+	{#if swNeedRefresh}
+		<p class="bg-sky-100 px-4 py-1 text-center text-sm text-sky-800" role="status">
+			A new version is available.
+			<button
+				class="underline"
+				onclick={() => {
+					updateSW?.();
+				}}>Reload to update</button
+			>
 		</p>
 	{/if}
 </header>
