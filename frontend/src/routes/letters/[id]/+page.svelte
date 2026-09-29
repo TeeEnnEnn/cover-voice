@@ -415,7 +415,7 @@
 		aria-label="Write"
 	>
 		<div>
-			<h2 class="text-2xl font-thin">{data.letter.title}</h2>
+			<h2 class="text-2xl font-semibold">{data.letter.title}</h2>
 			{#if data.letter.description}
 				<p class="text-sm text-muted-foreground">{data.letter.description}</p>
 			{/if}

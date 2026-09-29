@@ -98,7 +98,7 @@
 
 <div class="container mx-auto my-24 space-y-16">
 	<hgroup>
-		<h2 class="text-4xl font-thin">{greeting}, <span class="">{user.name}</span></h2>
+		<h2 class="text-3xl font-semibold">{greeting}, <span class="">{user.name}</span></h2>
 		<small class="text-lg font-light text-gray-600">{second_greeting}</small>
 	</hgroup>
 	<nav class="flex gap-4 text-sm lg:hidden" aria-label="Sections">

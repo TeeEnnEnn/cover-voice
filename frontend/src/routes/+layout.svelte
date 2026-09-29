@@ -39,24 +39,31 @@
 <header class="border-b border-cover-voice-main">
 	<nav class="container mx-auto flex items-center justify-between gap-6 px-4 py-4">
 		<div>
-			<a href="/" class="font-light">Cover Voice</a>
+			<a href="/" class="font-semibold">Cover Voice</a>
 		</div>
-		<ul class="flex gap-6">
+		<ul class="flex items-center gap-6">
 			{#if data.user}
 				<li>
-					<a href="/me" class="text-sm font-light text-gray-600 hover:text-black">Account</a>
+					<a
+						href="/me"
+						aria-label="Account"
+						title="Account"
+						class="flex h-9 w-9 items-center justify-center rounded-full bg-cover-voice-main text-sm font-semibold text-white hover:bg-cover-voice-main/90"
+					>
+						{(data.user.name.trim().charAt(0) || '?').toUpperCase()}
+					</a>
 				</li>
 				<li>
-					<button class="text-sm font-light text-gray-600 hover:text-black" onclick={signOut}
+					<button class="text-sm font-medium text-gray-600 hover:text-black" onclick={signOut}
 						>Sign out</button
 					>
 				</li>
 			{:else}
 				<li>
-					<a href="/signin" class="text-sm font-light text-gray-600 hover:text-black">Sign In</a>
+					<a href="/signin" class="text-sm font-medium text-gray-600 hover:text-black">Sign In</a>
 				</li>
 				<li>
-					<a href="/signup" class="text-sm font-light text-gray-600 hover:text-black">Sign up</a>
+					<a href="/signup" class="text-sm font-medium text-gray-600 hover:text-black">Sign up</a>
 				</li>
 			{/if}
 		</ul>

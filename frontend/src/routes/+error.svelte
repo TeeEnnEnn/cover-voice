@@ -5,7 +5,7 @@
 <svelte:head><title>Something went wrong · Cover Voice</title></svelte:head>
 
 <div class="container mx-auto my-24 max-w-lg space-y-4 px-4 text-center">
-	<h1 class="text-4xl font-thin">{page.status}: {page.error?.message ?? 'Unknown error'}</h1>
+	<h1 class="text-3xl font-semibold">{page.status}: {page.error?.message ?? 'Unknown error'}</h1>
 	<p class="text-muted-foreground">
 		{#if page.status === 404}
 			That page does not exist.
