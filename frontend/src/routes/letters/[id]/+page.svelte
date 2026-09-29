@@ -6,6 +6,7 @@
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
+	import VariableAutocompleteTextarea from '$lib/components/VariableAutocompleteTextarea.svelte';
 	import type { components } from '$lib/api/schema';
 
 	type LetterGeneration = components['schemas']['LetterGenerationSchema'];
@@ -287,7 +288,7 @@
 	let menu = $state<MenuState | null>(null);
 	let menuPos = $state({ top: 0, left: 0 });
 
-	const TRIGGER_RE = /(\{\{%?)\s*([\w-]*)$/;
+	const TRIGGER_RE = /(\{\{|\{%)\s*([\w-]*)$/;
 
 	let menuItems = $derived.by(() => {
 		if (!menu) return [];
@@ -678,29 +679,67 @@
 						</div>
 						<div class="flex flex-col gap-1">
 							<Label for="pageFontColor">Text color</Label>
-							<input
-								id="pageFontColor"
-								type="color"
-								value={pageConfig.fontColor}
-								oninput={(e) => {
-									pageConfig.fontColor = e.currentTarget.value;
-									onEditorInput();
-								}}
-								class="h-9 w-full border border-border bg-card px-1"
-							/>
+							<div class="flex gap-2">
+								<input
+									id="pageFontColor"
+									type="color"
+									value={pageConfig.fontColor}
+									aria-label="Text color picker"
+									oninput={(e) => {
+										pageConfig.fontColor = e.currentTarget.value;
+										onEditorInput();
+									}}
+									class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
+								/>
+								<Input
+									id="pageFontColorHex"
+									type="text"
+									value={pageConfig.fontColor}
+									pattern="#[0-9A-Fa-f]{6}"
+									maxlength={7}
+									spellcheck={false}
+									aria-label="Text color hex value"
+									oninput={(e) => {
+										const v = e.currentTarget.value;
+										if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+											pageConfig.fontColor = v;
+											onEditorInput();
+										}
+									}}
+								/>
+							</div>
 						</div>
 						<div class="flex flex-col gap-1">
 							<Label for="pageBackgroundColor">Background color</Label>
-							<Input
-								id="pageBackgroundColor"
-								type="color"
-								value={pageConfig.backgroundColor}
-								oninput={(e) => {
-									pageConfig.backgroundColor = e.currentTarget.value;
-									onEditorInput();
-								}}
-								class="h-9 w-full border border-border bg-card px-1"
-							/>
+							<div class="flex gap-2">
+								<input
+									id="pageBackgroundColor"
+									type="color"
+									value={pageConfig.backgroundColor}
+									aria-label="Background color picker"
+									oninput={(e) => {
+										pageConfig.backgroundColor = e.currentTarget.value;
+										onEditorInput();
+									}}
+									class="h-9 w-12 shrink-0 cursor-pointer border border-input bg-transparent p-1 shadow-xs"
+								/>
+								<Input
+									id="pageBackgroundColorHex"
+									type="text"
+									value={pageConfig.backgroundColor}
+									pattern="#[0-9A-Fa-f]{6}"
+									maxlength={7}
+									spellcheck={false}
+									aria-label="Background color hex value"
+									oninput={(e) => {
+										const v = e.currentTarget.value;
+										if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+											pageConfig.backgroundColor = v;
+											onEditorInput();
+										}
+									}}
+								/>
+							</div>
 						</div>
 					</div>
 					<div class="flex flex-col gap-1">
@@ -872,7 +911,13 @@
 							</div>
 							<div>
 								<Label for="blockValue">Block Value</Label>
-								<Input id="blockValue" name="blockValue" type="text" placeholder="value" required />
+								<VariableAutocompleteTextarea
+									id="blockValue"
+									name="blockValue"
+									placeholder="value"
+									required
+									suggestions={data.variables}
+								/>
 							</div>
 							<Button type="submit" class="w-full">Add</Button>
 						</form>

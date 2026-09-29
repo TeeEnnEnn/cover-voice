@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { Input } from '@/components/ui/input/index.js';
+	import { Textarea } from '@/components/ui/textarea/index.js';
 	import { Label } from '@/components/ui/label/index.js';
 	import Button from './ui/button/button.svelte';
 	import DeleteConfirmDialog from './DeleteConfirmDialog.svelte';
@@ -25,7 +26,9 @@
 		updatedAt,
 		kind = 'block',
 		usage = null,
-		onDeleted
+		onDeleted,
+		onUpdated,
+		suggestions = []
 	}: {
 		id: string;
 		name: string;
@@ -36,6 +39,8 @@
 		kind?: 'block' | 'variable';
 		usage?: ItemUsage | null;
 		onDeleted?: () => void;
+		onUpdated?: () => void;
+		suggestions?: Array<{ id: string; name: string; value: string }>;
 	} = $props();
 
 	let isEditing = $state(false);
@@ -47,6 +52,73 @@
 	let nameField = $derived(kind === 'block' ? 'blockName' : 'variableName');
 	let valueField = $derived(kind === 'block' ? 'blockValue' : 'variableValue');
 	let idField = $derived(kind === 'block' ? 'blockId' : 'variableId');
+
+	// ---- {{variable}} autocomplete for block values (blocks embed variables) ----
+	const VAR_TRIGGER_RE = /(\{\{)\s*([\w-]*)$/;
+	let varMenu = $state<{ query: string; index: number } | null>(null);
+
+	let varMenuItems = $derived.by(() => {
+		if (!varMenu || kind !== 'block') return [];
+		const q = varMenu.query.toLowerCase();
+		return suggestions.filter((s) => s.name.toLowerCase().includes(q)).slice(0, 8);
+	});
+
+	function onValueInput(e: Event) {
+		if (kind !== 'block') return;
+		const input = e.currentTarget as HTMLTextAreaElement;
+		const caret = input.selectionStart ?? input.value.length;
+		const m = input.value.slice(0, caret).match(VAR_TRIGGER_RE);
+		if (!m) {
+			varMenu = null;
+			return;
+		}
+		varMenu = { query: m[2], index: 0 };
+	}
+
+	function acceptVarSuggestion(varName: string) {
+		if (!varMenu) return;
+		const input = document.getElementById(`blockValue-${id}`) as HTMLTextAreaElement | null;
+		if (!input) {
+			varMenu = null;
+			return;
+		}
+		const caret = input.selectionStart ?? input.value.length;
+		const before = input.value.slice(0, caret);
+		const m = before.match(VAR_TRIGGER_RE);
+		if (!m || m.index === undefined) {
+			varMenu = null;
+			return;
+		}
+		const insert = `{{${varName}}}`;
+		const start = m.index as number;
+		const newValue = before.slice(0, start) + insert + input.value.slice(caret);
+		input.value = newValue;
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		varMenu = null;
+		requestAnimationFrame(() => {
+			const pos = start + insert.length;
+			input.setSelectionRange(pos, pos);
+			input.focus();
+		});
+	}
+
+	function onValueKeydown(e: KeyboardEvent) {
+		if (!varMenu) return;
+		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			const n = varMenuItems.length;
+			if (n === 0) return;
+			varMenu.index = (varMenu.index + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+		} else if (e.key === 'Enter' || e.key === 'Tab') {
+			const item = varMenuItems[varMenu.index];
+			if (item) {
+				e.preventDefault();
+				acceptVarSuggestion(item.name);
+			}
+		} else if (e.key === 'Escape') {
+			varMenu = null;
+		}
+	}
 
 	function refNames(refs: NamedRef[] | undefined): string {
 		if (!refs || refs.length === 0) return '';
@@ -93,10 +165,14 @@
 		class="flex flex-col gap-4"
 		use:enhance={() => {
 			updating = true;
-			return async ({ update }) => {
+			return async ({ result, update }) => {
 				updating = false;
-				isEditing = false;
 				await update();
+				if (result.type === 'success') {
+					isEditing = false;
+					varMenu = null;
+					onUpdated?.();
+				}
 			};
 		}}
 	>
@@ -111,7 +187,56 @@
 		<div class="flex flex-col gap-2">
 			<Label for="blockValue-{id}">Value</Label>
 			{#if isEditing}
-				<Input {value} required name={valueField} id="blockValue-{id}" />
+				{#if kind === 'block'}
+					<div class="relative">
+						<Textarea
+							{value}
+							required
+							name={valueField}
+							id="blockValue-{id}"
+							rows={3}
+							oninput={onValueInput}
+							onkeydown={onValueKeydown}
+							onblur={() => {
+								setTimeout(() => {
+									varMenu = null;
+								}, 150);
+							}}
+							placeholder={'Use {{variable}} references'}
+						/>
+						{#if varMenu && varMenuItems.length > 0}
+							<ul
+								role="listbox"
+								aria-label="Variable suggestions"
+								class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
+							>
+								{#each varMenuItems as item, i (item.id)}
+									<li role="option" aria-selected={i === varMenu.index}>
+										<button
+											type="button"
+											class="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm {i ===
+											varMenu.index
+												? 'bg-accent'
+												: ''}"
+											onmousedown={(e) => {
+												e.preventDefault();
+												acceptVarSuggestion(item.name);
+											}}
+											onmouseenter={() => {
+												if (varMenu) varMenu.index = i;
+											}}
+										>
+											<code>{`{{${item.name}}}`}</code>
+											<span class="truncate text-xs text-muted-foreground">{item.value}</span>
+										</button>
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+				{:else}
+					<Textarea {value} required name={valueField} id="blockValue-{id}" rows={3} />
+				{/if}
 			{:else}
 				<Input {value} disabled />
 			{/if}
@@ -132,6 +257,7 @@
 					type="button"
 					onclick={() => {
 						isEditing = false;
+						varMenu = null;
 					}}>Cancel</Button
 				>
 				<Button class="flex-3" type="submit" disabled={updating}>

@@ -40,20 +40,24 @@
 		{/if}
 	</div>
 	<SearchInput bind:value={query} inputId="search-letters" placeholder={`Search ${label}s...`} />
-	{#each filtered as letter (letter.id)}
-		<button
-			onclick={() => {
-				onSelect(letter);
-			}}
-		>
-			<ItemOneLiner name={letter.title} lastUpdated={letter.updatedAt} />
-		</button>
-	{:else}
-		<p class="text-sm text-muted-foreground">
-			{letters.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
-			{#if letters.length === 0 && onCreateNew}
-				<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
-			{/if}
-		</p>
-	{/each}
+	<div class="no-scrollbar max-h-[50vh] min-h-0 scroll-fade overflow-y-auto">
+		<div class="flex flex-col gap-2">
+			{#each filtered as letter (letter.id)}
+				<button
+					onclick={() => {
+						onSelect(letter);
+					}}
+				>
+					<ItemOneLiner name={letter.title} lastUpdated={letter.updatedAt} />
+				</button>
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					{letters.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
+					{#if letters.length === 0 && onCreateNew}
+						<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
+					{/if}
+				</p>
+			{/each}
+		</div>
+	</div>
 </div>

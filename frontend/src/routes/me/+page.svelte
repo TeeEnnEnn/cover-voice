@@ -7,6 +7,7 @@
 	import ItemSearch from '@/components/ItemSearch.svelte';
 	import LetterSearch from '@/components/LetterSearch.svelte';
 	import CreateToggle from '@/components/CreateToggle.svelte';
+	import VariableAutocompleteTextarea from '@/components/VariableAutocompleteTextarea.svelte';
 	import type { components } from '@/api/schema.js';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -187,7 +188,7 @@
 			<div class="flex flex-col gap-10">
 				<div
 					id="blocks-panel"
-					class="flex flex-1 scroll-mt-4 flex-col gap-6  border border-border bg-card px-4 py-4 shadow-sm"
+					class="flex flex-1 scroll-mt-4 flex-col gap-6 border border-border bg-card px-4 py-4 shadow-sm"
 				>
 					<h3 class="text-lg font-semibold">Blocks</h3>
 					<div>
@@ -203,10 +204,14 @@
 								label="block"
 								kind="block"
 								usages={blockUsages}
+								suggestions={variableItems}
 								onCreateNew={() => {
 									creatingNewBlock = true;
 								}}
 								onDeleted={() => {
+									selectedBlock = null;
+								}}
+								onUpdated={() => {
 									selectedBlock = null;
 								}}
 							/>
@@ -235,7 +240,12 @@
 									</div>
 									<div>
 										<Label for="blockValue" class="text-lg font-light">block value</Label>
-										<Textarea name="blockValue" id="blockValue" required />
+										<VariableAutocompleteTextarea
+											name="blockValue"
+											id="blockValue"
+											required
+											suggestions={variableItems}
+										/>
 									</div>
 									<Button type="submit" disabled={blockSubmitting}
 										>{blockSubmitting ? 'Creating…' : 'Create'}</Button
@@ -267,6 +277,9 @@
 									creatingNewVariable = true;
 								}}
 								onDeleted={() => {
+									selectedVariable = null;
+								}}
+								onUpdated={() => {
 									selectedVariable = null;
 								}}
 							/>

@@ -15,16 +15,20 @@
 		kind,
 		usages = {},
 		onCreateNew,
-		onDeleted
+		onDeleted,
+		onUpdated,
+		suggestions = []
 	}: {
 		items: T[];
 		selected: T | null;
 		onSelect: (item: T) => void;
 		onCreateNew?: () => void;
 		onDeleted?: () => void;
+		onUpdated?: () => void;
 		label: string;
 		kind: 'block' | 'variable';
 		usages?: Record<string, ItemUsage>;
+		suggestions?: Array<{ id: string; name: string; value: string }>;
 	} = $props();
 
 	let query = $state('');
@@ -60,32 +64,41 @@
 				{...selected}
 				{kind}
 				usage={usages[selected.id] ?? null}
+				suggestions={kind === 'block' ? suggestions : []}
 				onDeleted={() => {
 					onDeleted?.();
+					document.getElementById('search-' + kind)?.focus();
+				}}
+				onUpdated={() => {
+					onUpdated?.();
 					document.getElementById('search-' + kind)?.focus();
 				}}
 			/>
 		{/if}
 	</div>
 	<SearchInput bind:value={query} inputId={`search-${kind}`} placeholder={`Search ${label}s...`} />
-	{#each filtered as item (item.id)}
-		<button
-			onclick={() => {
-				onSelect(item);
-			}}
-		>
-			<ItemOneLiner
-				name={item.name}
-				lastUpdated={item.updatedAt}
-				usageBadge={usageBadgeFor(item.id)}
-			/>
-		</button>
-	{:else}
-		<p class="text-sm text-muted-foreground">
-			{items.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
-			{#if items.length === 0 && onCreateNew}
-				<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
-			{/if}
-		</p>
-	{/each}
+	<div class="no-scrollbar max-h-72 min-h-0 scroll-fade overflow-y-auto">
+		<div class="flex flex-col gap-2">
+			{#each filtered as item (item.id)}
+				<button
+					onclick={() => {
+						onSelect(item);
+					}}
+				>
+					<ItemOneLiner
+						name={item.name}
+						lastUpdated={item.updatedAt}
+						usageBadge={usageBadgeFor(item.id)}
+					/>
+				</button>
+			{:else}
+				<p class="text-sm text-muted-foreground">
+					{items.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
+					{#if items.length === 0 && onCreateNew}
+						<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
+					{/if}
+				</p>
+			{/each}
+		</div>
+	</div>
 </div>
