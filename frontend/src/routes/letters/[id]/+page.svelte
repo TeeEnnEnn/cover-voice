@@ -28,14 +28,25 @@
 	let bodyAlign = $state<Align>(initialSections.body.align ?? 'left');
 	let footerAlign = $state<Align>(initialSections.footer.align ?? 'left');
 
-	let previewUrl = $state<string | null>(null);
 	let previewLoading = $state(false);
 	let previewHint = $state<string | null>('Press Update Preview to render the current sections.');
 	let downloading = $state(false);
 	let downloadError = $state<string | null>(null);
 
+	// Double-buffered preview: the new PDF loads in the hidden iframe and only
+	// becomes visible on its `load` event, so the viewer never flashes white
+	// mid-swap. Raw blob URLs are stored (fragment appended at render time so
+	// revocation stays straightforward).
+	let urlA = $state<string | null>(null);
+	let urlB = $state<string | null>(null);
+	let topIsA = $state(true);
+	let staging: { slot: 'A' | 'B'; seq: number } | null = null;
+	const PDF_VIEWER_FRAGMENT = '#toolbar=0&navpanes=0';
+	const CROSSFADE_MS = 200;
+
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 	let activeController: AbortController | null = null;
+	let fetchSeq = 0;
 	const letterId = data.letter.id;
 
 	const DEFAULT_CONFIG = {
@@ -67,6 +78,7 @@
 		activeController?.abort();
 		const controller = new AbortController();
 		activeController = controller;
+		const seq = ++fetchSeq;
 		previewLoading = true;
 		previewHint = null;
 		try {
@@ -83,10 +95,10 @@
 				previewHint = 'Preview paused — check block/variable names, then update again.';
 				return;
 			}
+			if (controller.signal.aborted || seq !== fetchSeq) return;
 			const blob = await response.blob();
-			const url = URL.createObjectURL(blob);
-			if (previewUrl) URL.revokeObjectURL(previewUrl);
-			previewUrl = url;
+			if (controller.signal.aborted || seq !== fetchSeq) return;
+			stagePreview(URL.createObjectURL(blob), seq);
 		} catch (err) {
 			if (err instanceof DOMException && err.name === 'AbortError') return;
 			previewHint = 'Preview failed. Press Update Preview to retry.';
@@ -94,6 +106,43 @@
 			if (activeController === controller) activeController = null;
 			previewLoading = false;
 		}
+	}
+
+	/**
+	 * Parks a fresh blob URL in the background iframe. It is promoted to
+	 * visible only from that iframe's `load` event (see onFrameLoad), so a
+	 * slow render never shows a half-loaded viewer.
+	 */
+	function stagePreview(rawUrl: string, seq: number) {
+		if (seq !== fetchSeq) {
+			URL.revokeObjectURL(rawUrl);
+			return;
+		}
+		const slot = topIsA ? 'B' : 'A';
+		const prev = slot === 'A' ? urlA : urlB;
+		if (prev) URL.revokeObjectURL(prev);
+		if (slot === 'A') urlA = rawUrl;
+		else urlB = rawUrl;
+		staging = { slot, seq };
+	}
+
+	function onFrameLoad(slot: 'A' | 'B') {
+		if (!staging || staging.slot !== slot || staging.seq !== fetchSeq) return;
+		staging = null;
+		topIsA = slot === 'A';
+		// Both documents stay alive through the CSS crossfade; retire the old
+		// background URL afterwards. The equality guard protects against a
+		// newer preview having claimed the slot mid-fade.
+		const bgSlot = topIsA ? 'B' : 'A';
+		const bgUrl = bgSlot === 'A' ? urlA : urlB;
+		setTimeout(() => {
+			const current = bgSlot === 'A' ? urlA : urlB;
+			if (current && current === bgUrl) {
+				URL.revokeObjectURL(current);
+				if (bgSlot === 'A') urlA = null;
+				else urlB = null;
+			}
+		}, CROSSFADE_MS + 50);
 	}
 
 	function onEditorInput() {
@@ -362,9 +411,27 @@
 		{#if previewHint}
 			<p class="mb-2 text-sm text-muted-foreground" role="status">{previewHint}</p>
 		{/if}
-		{#if previewUrl}
-			<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full rounded bg-white"
-			></iframe>
+		{#if urlA || urlB}
+			<div class="relative h-[70vh] overflow-hidden rounded bg-[#e8e6e1]">
+				<iframe
+					src={urlA ? urlA + PDF_VIEWER_FRAGMENT : undefined}
+					title="Letter PDF preview"
+					class="absolute inset-0 h-full w-full rounded bg-white transition-opacity duration-200 {topIsA
+						? 'z-10 opacity-100'
+						: 'z-0 opacity-0'}"
+					aria-hidden={!topIsA}
+					onload={() => onFrameLoad('A')}
+				></iframe>
+				<iframe
+					src={urlB ? urlB + PDF_VIEWER_FRAGMENT : undefined}
+					title="Letter PDF preview"
+					class="absolute inset-0 h-full w-full rounded bg-white transition-opacity duration-200 {!topIsA
+						? 'z-10 opacity-100'
+						: 'z-0 opacity-0'}"
+					aria-hidden={topIsA}
+					onload={() => onFrameLoad('B')}
+				></iframe>
+			</div>
 		{:else}
 			<p class="text-sm text-muted-foreground">
 				Nothing rendered yet. Write your sections, then press Update Preview.
