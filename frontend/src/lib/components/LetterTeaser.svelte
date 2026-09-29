@@ -101,12 +101,12 @@
 			{:else}
 				<Button
 					type="button"
-					variant="outline"
+					variant="secondary"
 					onclick={() => {
 						isEditing = true;
 					}}>Edit</Button
 				>
-				<Button href={`/letters/${letter.id}`} variant="outline" class="flex-1">
+				<Button href={`/letters/${letter.id}`} variant="default" class="flex-1">
 					View letter
 					<svg
 						xmlns="http://www.w3.org/2000/svg"

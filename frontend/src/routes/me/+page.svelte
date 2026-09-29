@@ -8,9 +8,10 @@
 	import LetterSearch from '@/components/LetterSearch.svelte';
 	import CreateToggle from '@/components/CreateToggle.svelte';
 	import type { components } from '@/api/schema.js';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import { pushToast } from '$lib/stores/toast.svelte';
+	import { authClient } from '$lib/auth-client';
 
 	type Block = components['schemas']['Block'];
 	type Variable = components['schemas']['Variable'];
@@ -41,6 +42,17 @@
 	let letterSubmitting = $state(false);
 	let blockSubmitting = $state(false);
 	let variableSubmitting = $state(false);
+	let signingOut = $state(false);
+
+	async function signOut() {
+		signingOut = true;
+		try {
+			await authClient.signOut();
+		} finally {
+			await invalidateAll();
+			await goto('/');
+		}
+	}
 
 	function formToast(
 		f: Record<string, unknown>
@@ -97,10 +109,15 @@
 </script>
 
 <div class="container mx-auto my-24 space-y-16">
-	<hgroup>
-		<h2 class="text-3xl font-semibold">{greeting}, <span class="">{user.name}</span></h2>
-		<small class="text-lg font-light text-muted-foreground">{second_greeting}</small>
-	</hgroup>
+	<div class="flex items-start justify-between gap-4">
+		<hgroup>
+			<h2 class="text-3xl font-semibold">{greeting}, <span class="">{user.name}</span></h2>
+			<small class="text-lg font-light text-muted-foreground">{second_greeting}</small>
+		</hgroup>
+		<Button variant="outline" type="button" disabled={signingOut} onclick={signOut}>
+			{signingOut ? 'Signing out…' : 'Sign out'}
+		</Button>
+	</div>
 	<nav class="flex gap-4 text-sm lg:hidden" aria-label="Sections">
 		<a href="#letters-panel" class="underline">Letters</a>
 		<a href="#blocks-panel" class="underline">Blocks</a>

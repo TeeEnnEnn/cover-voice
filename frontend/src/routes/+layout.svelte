@@ -1,10 +1,8 @@
 <script lang="ts">
 	import './layout.css';
 	import type { LayoutProps } from './$types';
-	import { goto, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
-	import { authClient } from '@/auth-client';
 	import Toaster from '$lib/components/Toaster.svelte';
 
 	let { data, children }: LayoutProps = $props();
@@ -22,15 +20,6 @@
 			swNeedRefresh = value;
 		});
 	});
-
-	async function signOut() {
-		try {
-			await authClient.signOut();
-		} finally {
-			await invalidateAll();
-			await goto('/');
-		}
-	}
 </script>
 
 <svelte:head><link rel="icon" href="/Cover-Voice_192x192.svg" type="image/svg+xml" /></svelte:head>
@@ -60,12 +49,6 @@
 					>
 						{(data.user.name.trim().charAt(0) || '?').toUpperCase()}
 					</a>
-				</li>
-				<li>
-					<button
-						class="text-sm font-medium text-muted-foreground hover:text-foreground"
-						onclick={signOut}>Sign out</button
-					>
 				</li>
 			{:else}
 				<li>

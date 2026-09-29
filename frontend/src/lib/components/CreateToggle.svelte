@@ -14,7 +14,7 @@
 		>
 	{:else}
 		<Button
-			variant="outline"
+			variant="default"
 			onclick={() => {
 				creating = true;
 			}}>New {label}</Button

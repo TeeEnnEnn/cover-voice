@@ -165,7 +165,7 @@
 			{:else}
 				<Button
 					type="button"
-					variant="outline"
+					variant="secondary"
 					onclick={() => {
 						isEditing = true;
 					}}>Edit</Button

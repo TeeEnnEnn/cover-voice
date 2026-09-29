@@ -773,7 +773,7 @@
 						</ul>
 					{/if}
 					<Button
-						variant={settingNewVariable ? 'destructive' : 'outline'}
+						variant={settingNewVariable ? 'destructive' : 'default'}
 						onclick={() => {
 							settingNewVariable = !settingNewVariable;
 						}}
@@ -856,7 +856,7 @@
 						</ul>
 					{/if}
 					<Button
-						variant={settingNewBlock ? 'destructive' : 'outline'}
+						variant={settingNewBlock ? 'destructive' : 'default'}
 						onclick={() => {
 							settingNewBlock = !settingNewBlock;
 						}}
@@ -900,7 +900,7 @@
 			<h3 class="text-lg font-semibold">Preview</h3>
 			<div class="flex gap-2">
 				<Button
-					variant="outline"
+					variant="secondary"
 					type="button"
 					disabled={previewLoading}
 					onclick={updatePreviewNow}

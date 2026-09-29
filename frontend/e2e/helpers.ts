@@ -49,6 +49,7 @@ export async function signIn(page: Page, email: string, password = 'password123'
 }
 
 export async function signOut(page: Page) {
+	await page.goto('/me');
 	await page.getByRole('button', { name: 'Sign out' }).click();
 	await expect(page.getByRole('link', { name: 'Sign In' }).first()).toBeVisible();
 }
