@@ -117,6 +117,10 @@ jobs:
           BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
           BETTER_AUTH_URL: http://localhost
           DOMAIN: http://localhost
+          # Dummies satisfy compose's required vars (compose.yaml :? checks).
+          # Nothing sends emails - tests/e2e stub the sender.
+          RESEND_API_KEY: ci-only-resend-key
+          EMAIL_FROM: Cover Voice <ci@example.com>
       - run: docker run --rm -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - uses: actions/setup-node@v4
         with:
