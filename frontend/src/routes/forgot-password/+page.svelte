@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card/index.js';
+	import AuthCard from '$lib/components/AuthCard.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
@@ -30,48 +30,40 @@
 	}
 </script>
 
-<svelte:head><title>Forgot password</title></svelte:head>
-<div class="flex min-h-screen flex-col">
-	<Card.Root class="mx-auto my-36 w-full max-w-sm">
-		<Card.Header>
-			<Card.Title class="text-2xl">Forgot password</Card.Title>
-			<Card.Description>
-				Enter your email and we will send you a reset link if an account exists.
-			</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			{#if sent}
-				<p class="text-sm text-green-700" role="status">
-					If an account exists for {email.trim()}, a reset link is on its way.
-				</p>
-			{:else}
-				<form onsubmit={handleSubmit}>
-					<FieldGroup>
-						<Field>
-							<FieldLabel for="email">Email</FieldLabel>
-							<Input
-								id="email"
-								name="email"
-								type="email"
-								autocomplete="email"
-								bind:value={email}
-								required
-							/>
-						</Field>
-						{#if error}
-							<p class="text-sm text-red-600" role="alert">{error}</p>
-						{/if}
-						<Field>
-							<Button type="submit" class="w-full" disabled={submitting}>
-								{submitting ? 'Sending…' : 'Send reset link'}
-							</Button>
-						</Field>
-					</FieldGroup>
-				</form>
-			{/if}
-			<p class="mt-4 text-sm text-gray-600">
-				Remembered it? <a href="/signin" class="underline">Sign in</a>.
-			</p>
-		</Card.Content>
-	</Card.Root>
-</div>
+<AuthCard
+	title="Forgot password"
+	description="Enter your email and we will send you a reset link if an account exists."
+>
+	{#if sent}
+		<p class="text-sm text-green-700" role="status">
+			If an account exists for {email.trim()}, a reset link is on its way.
+		</p>
+	{:else}
+		<form onsubmit={handleSubmit}>
+			<FieldGroup>
+				<Field>
+					<FieldLabel for="email">Email</FieldLabel>
+					<Input
+						id="email"
+						name="email"
+						type="email"
+						autocomplete="email"
+						bind:value={email}
+						required
+					/>
+				</Field>
+				{#if error}
+					<p class="text-sm text-red-600" role="alert">{error}</p>
+				{/if}
+				<Field>
+					<Button type="submit" class="w-full" disabled={submitting}>
+						{submitting ? 'Sending…' : 'Send reset link'}
+					</Button>
+				</Field>
+			</FieldGroup>
+		</form>
+	{/if}
+	<p class="mt-4 text-sm text-gray-600">
+		Remembered it? <a href="/signin" class="underline">Sign in</a>.
+	</p>
+</AuthCard>

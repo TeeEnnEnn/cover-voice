@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import * as Card from '$lib/components/ui/card/index.js';
+	import AuthCard from '$lib/components/AuthCard.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
 		FieldGroup,
@@ -51,58 +51,49 @@
 	}
 </script>
 
-<svelte:head><title>Reset password</title></svelte:head>
-<div class="flex min-h-screen flex-col">
-	<Card.Root class="mx-auto my-36 w-full max-w-sm">
-		<Card.Header>
-			<Card.Title class="text-2xl">Reset password</Card.Title>
-			<Card.Description>Choose a new password for your account.</Card.Description>
-		</Card.Header>
-		<Card.Content>
-			{#if errorParam}
-				<p class="text-sm text-red-600" role="alert">
-					This reset link is invalid or expired.
-					<a href="/forgot-password" class="underline">Request a new one</a>.
-				</p>
-			{:else}
-				<form onsubmit={handleSubmit}>
-					<FieldGroup>
-						<Field>
-							<FieldLabel for="password">New password</FieldLabel>
-							<Input
-								id="password"
-								name="password"
-								type="password"
-								minlength={PASSWORD_MIN_LENGTH}
-								autocomplete="new-password"
-								bind:value={password}
-								required
-							/>
-							<FieldDescription>
-								At least {PASSWORD_MIN_LENGTH} characters, with at least one letter and one number.
-							</FieldDescription>
-							<FieldLabel for="confirmation">Confirm new password</FieldLabel>
-							<Input
-								id="confirmation"
-								name="confirmation"
-								type="password"
-								minlength={PASSWORD_MIN_LENGTH}
-								autocomplete="new-password"
-								bind:value={confirmation}
-								required
-							/>
-						</Field>
-						{#if error}
-							<p class="text-sm text-red-600" role="alert">{error}</p>
-						{/if}
-						<Field>
-							<Button type="submit" class="w-full" disabled={submitting}>
-								{submitting ? 'Saving…' : 'Set new password'}
-							</Button>
-						</Field>
-					</FieldGroup>
-				</form>
-			{/if}
-		</Card.Content>
-	</Card.Root>
-</div>
+<AuthCard title="Reset password" description="Choose a new password for your account.">
+	{#if errorParam}
+		<p class="text-sm text-red-600" role="alert">
+			This reset link is invalid or expired.
+			<a href="/forgot-password" class="underline">Request a new one</a>.
+		</p>
+	{:else}
+		<form onsubmit={handleSubmit}>
+			<FieldGroup>
+				<Field>
+					<FieldLabel for="password">New password</FieldLabel>
+					<Input
+						id="password"
+						name="password"
+						type="password"
+						minlength={PASSWORD_MIN_LENGTH}
+						autocomplete="new-password"
+						bind:value={password}
+						required
+					/>
+					<FieldDescription>
+						At least {PASSWORD_MIN_LENGTH} characters, with at least one letter and one number.
+					</FieldDescription>
+					<FieldLabel for="confirmation">Confirm new password</FieldLabel>
+					<Input
+						id="confirmation"
+						name="confirmation"
+						type="password"
+						minlength={PASSWORD_MIN_LENGTH}
+						autocomplete="new-password"
+						bind:value={confirmation}
+						required
+					/>
+				</Field>
+				{#if error}
+					<p class="text-sm text-red-600" role="alert">{error}</p>
+				{/if}
+				<Field>
+					<Button type="submit" class="w-full" disabled={submitting}>
+						{submitting ? 'Saving…' : 'Set new password'}
+					</Button>
+				</Field>
+			</FieldGroup>
+		</form>
+	{/if}
+</AuthCard>
