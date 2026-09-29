@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { randomEmail, signUp } from './helpers';
+import { randomEmail, signUpVerified } from './helpers';
 
 async function createBlock(page, name: string, value: string) {
 	await page.getByRole('button', { name: 'New Block' }).click();
@@ -10,7 +10,7 @@ async function createBlock(page, name: string, value: string) {
 }
 
 test('deleting an unused block asks for confirmation first', async ({ page }) => {
-	await signUp(page, randomEmail('delete-confirm'), 'Delete User');
+	await signUpVerified(page, randomEmail('delete-confirm'), 'Delete User');
 	await page.goto('/me');
 
 	const blockName = `doomed-${Date.now()}`;

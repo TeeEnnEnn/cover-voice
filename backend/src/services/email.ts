@@ -15,16 +15,22 @@ function createResendSender(): EmailSender {
 	};
 }
 
-let sender: EmailSender | null = null;
-
-/** Test hook: replaces the Resend sender (e.g. with an in-memory collector). */
-export function setEmailSender(fake: EmailSender | null): void {
-	sender = fake;
+function getSender(): EmailSender {
+	return createResendSender();
 }
 
-function getSender(): EmailSender {
-	if (!sender) sender = createResendSender();
-	return sender;
+export type SentEmail = { to: string; subject: string; html: string };
+
+/** In-memory copy of every delivered email. Only populated when
+ * COLLECT_SENT_EMAILS=true (tests); in that mode nothing is sent for real. */
+export const emailOutbox: Array<SentEmail> = [];
+
+async function deliver(input: SentEmail): Promise<void> {
+	if (process.env.COLLECT_SENT_EMAILS === 'true') {
+		emailOutbox.push(input);
+		return;
+	}
+	await getSender()(input);
 }
 
 function layout(title: string, body: string): string {
@@ -35,8 +41,14 @@ ${body}
 </div>`;
 }
 
+/**
+ * NOTE: no URL rewriting is needed. better-auth already builds email links
+ * under its mount path (`${BETTER_AUTH_URL}/api/auth/verify-email...`),
+ * which reaches the backend through the same-origin /api proxy (Vite dev,
+ * preview) and Caddy in production.
+ */
 export async function sendVerificationEmail(input: { to: string; url: string }): Promise<void> {
-	await getSender()({
+	await deliver({
 		to: input.to,
 		subject: 'Verify your Cover Voice email',
 		html: layout(
@@ -49,7 +61,7 @@ export async function sendVerificationEmail(input: { to: string; url: string }):
 }
 
 export async function sendPasswordResetEmail(input: { to: string; url: string }): Promise<void> {
-	await getSender()({
+	await deliver({
 		to: input.to,
 		subject: 'Reset your Cover Voice password',
 		html: layout(

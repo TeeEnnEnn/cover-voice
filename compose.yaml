@@ -41,6 +41,8 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:?set BETTER_AUTH_URL in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      RESEND_API_KEY: ${RESEND_API_KEY:?set RESEND_API_KEY in .env}
+      EMAIL_FROM: ${EMAIL_FROM:?set EMAIL_FROM in .env}
       PORT: 3001
     healthcheck:
       test:

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { randomEmail, signUp } from './helpers';
+import { randomEmail, signUpVerified } from './helpers';
 
 test('account page requires signing in', async ({ page }) => {
 	await page.goto('/me');
@@ -7,7 +7,7 @@ test('account page requires signing in', async ({ page }) => {
 });
 
 test('signed-in user can add and list a block', async ({ page }) => {
-	await signUp(page, randomEmail('items'), 'Item User');
+	await signUpVerified(page, randomEmail('items'), 'Item User');
 	await page.goto('/me');
 
 	const blockName = `groceries-${Date.now()}`;

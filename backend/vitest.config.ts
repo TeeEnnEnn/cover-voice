@@ -7,6 +7,9 @@ const testEnv = {
 	BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? 'http://localhost',
 	CORS_ORIGINS: process.env.CORS_ORIGINS ?? 'http://localhost:5173',
 	PORT: process.env.PORT ?? '3001',
+	// Collect auth emails in-memory instead of sending (see
+	// services/email.ts). Never enable outside tests.
+	COLLECT_SENT_EMAILS: 'true',
 	// Dummy values so env validation passes; tests stub the sender (see
 	// tests/setup.ts) and never reach Resend.
 	RESEND_API_KEY: process.env.RESEND_API_KEY ?? 'test-only-resend-key',

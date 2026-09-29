@@ -34,7 +34,14 @@ export default defineConfig({
 				BETTER_AUTH_SECRET: TEST_SECRET,
 				BETTER_AUTH_URL: 'http://localhost:5173',
 				CORS_ORIGINS: 'http://localhost:5173',
-				PORT: '3001'
+				PORT: '3001',
+				// Dummy mail config plus the gated outbox reader (see
+				// backend/src/routes/test-outbox.ts). Never set
+				// ALLOW_TEST_OUTBOX outside tests.
+				RESEND_API_KEY: 'test-only-resend-key',
+				EMAIL_FROM: 'Cover Voice <test@example.com>',
+				COLLECT_SENT_EMAILS: 'true',
+				ALLOW_TEST_OUTBOX: 'true'
 			}
 		},
 		{
