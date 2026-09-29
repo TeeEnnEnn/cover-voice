@@ -10,6 +10,27 @@ type Letter = components['schemas']['Letter'];
 type BlockUsage = components['schemas']['BlockUsage'];
 type VariableUsage = components['schemas']['VariableUsage'];
 
+/** Extracts the backend's error message ({ error: { message } }) when present. */
+function apiMessage(err: unknown): string | null {
+	if (typeof err === 'object' && err !== null && 'error' in err) {
+		const nested = (err as { error?: { message?: unknown } }).error;
+		if (nested && typeof nested.message === 'string' && nested.message.length > 0) {
+			return nested.message;
+		}
+	}
+	return null;
+}
+
+/**
+ * Fails an action with the backend's message when available (e.g. duplicate
+ * names surface as 409 "already exists" instead of a generic failure).
+ */
+function failWithApiError(action: string, err: unknown, fallback: string) {
+	const message = apiMessage(err) ?? fallback;
+	const status = /already exists/i.test(message) ? 409 : 400;
+	return fail(status, { action, message });
+}
+
 export const load: PageServerLoad = async ({ fetch, request }) => {
 	const cookie = request.headers.get('cookie');
 	const user = await requireUser(fetch, cookie);
@@ -79,7 +100,7 @@ export const actions = {
 		});
 
 		if (letterError) {
-			return fail(400, { action: 'newLetter', message: 'Failed to create letter.' });
+			return failWithApiError('newLetter', letterError, 'Failed to create letter.');
 		}
 
 		return {
@@ -109,7 +130,7 @@ export const actions = {
 		});
 
 		if (err) {
-			return fail(400, { action: 'newBlock', message: 'Failed to create block.' });
+			return failWithApiError('newBlock', err, 'Failed to create block.');
 		}
 		return { action: 'newBlock' as const, success: true, newBlock: data as Block, message: '' };
 	},
@@ -133,7 +154,7 @@ export const actions = {
 		});
 
 		if (err) {
-			return fail(400, { action: 'newVariable', message: 'Failed to create variable.' });
+			return failWithApiError('newVariable', err, 'Failed to create variable.');
 		}
 		return {
 			action: 'newVariable' as const,
@@ -173,7 +194,7 @@ export const actions = {
 		});
 
 		if (err) {
-			return fail(400, { action: 'updateVariable', message: 'Failed to update variable.' });
+			return failWithApiError('updateVariable', err, 'Failed to update variable.');
 		}
 		return { success: true, updateVariable: data, message: '' };
 	},
@@ -237,7 +258,7 @@ export const actions = {
 		});
 
 		if (err) {
-			return fail(400, { action: 'updateBlock', message: 'Failed to update block.' });
+			return failWithApiError('updateBlock', err, 'Failed to update block.');
 		}
 		return { success: true, updateBlock: data, message: '' };
 	},
@@ -301,7 +322,7 @@ export const actions = {
 		});
 
 		if (err) {
-			return fail(400, { action: 'updateLetter', message: 'Failed to update letter.' });
+			return failWithApiError('updateLetter', err, 'Failed to update letter.');
 		}
 		return { action: 'updateLetter' as const, success: true, letter: data as Letter, message: '' };
 	},
