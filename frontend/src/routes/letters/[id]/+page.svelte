@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
+	import { pushToast } from '$lib/stores/toast.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -14,6 +15,19 @@
 
 	let settingNewVariable = $state(false);
 	let settingNewBlock = $state(false);
+
+	let lastForm: unknown = null;
+	$effect(() => {
+		if (!form || form === lastForm) return;
+		lastForm = form;
+		const f = form as Record<string, unknown>;
+		if (f.success === true) {
+			if (f.action === 'newBlock') pushToast('success', 'Block created.');
+			else if (f.action === 'newVariable') pushToast('success', 'Variable created.');
+		} else if (typeof f.message === 'string' && f.message) {
+			pushToast('error', f.message);
+		}
+	});
 
 	const initialSections = data.letter.rawContent?.sections ?? {
 		header: { text: '', align: 'left' as Align },
@@ -374,20 +388,6 @@
 				<p class="text-sm text-muted-foreground">{data.letter.description}</p>
 			{/if}
 		</div>
-
-		{#if form && !form.success && form.message}
-			<p class="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-red-600" role="alert">
-				{form.message}
-			</p>
-		{/if}
-		{#if form?.success && form.message}
-			<p
-				class="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-green-700"
-				role="status"
-			>
-				{form.message}
-			</p>
-		{/if}
 
 		<div class="flex items-center justify-between gap-2">
 			<p class="text-sm text-muted-foreground" role="status" aria-live="polite">

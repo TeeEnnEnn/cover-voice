@@ -13,11 +13,15 @@
 		onSelect,
 		label,
 		kind,
-		usages = {}
+		usages = {},
+		onCreateNew,
+		onDeleted
 	}: {
 		items: T[];
 		selected: T | null;
 		onSelect: (item: T) => void;
+		onCreateNew?: () => void;
+		onDeleted?: () => void;
 		label: string;
 		kind: 'block' | 'variable';
 		usages?: Record<string, ItemUsage>;
@@ -52,10 +56,18 @@
 <div class="flex flex-col gap-2">
 	<div>
 		{#if selected}
-			<ItemTeaser {...selected} {kind} usage={usages[selected.id] ?? null} />
+			<ItemTeaser
+				{...selected}
+				{kind}
+				usage={usages[selected.id] ?? null}
+				onDeleted={() => {
+					onDeleted?.();
+					document.getElementById('search-' + kind)?.focus();
+				}}
+			/>
 		{/if}
 	</div>
-	<SearchInput bind:value={query} placeholder={`Search ${label}s...`} />
+	<SearchInput bind:value={query} inputId={`search-${kind}`} placeholder={`Search ${label}s...`} />
 	{#each filtered as item (item.id)}
 		<button
 			onclick={() => {
@@ -71,6 +83,9 @@
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			{items.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
+			{#if items.length === 0 && onCreateNew}
+				<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
+			{/if}
 		</p>
 	{/each}
 </div>

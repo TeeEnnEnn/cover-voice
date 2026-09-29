@@ -6,6 +6,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { authClient } from '@/auth-client';
+	import Toaster from '$lib/components/Toaster.svelte';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -80,6 +81,7 @@
 
 <main class="">
 	{@render children()}
+	<Toaster />
 </main>
 
 <footer class="border-t border-gray-600 py-4">

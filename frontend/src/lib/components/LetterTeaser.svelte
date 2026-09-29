@@ -8,13 +8,33 @@
 
 	type Letter = components['schemas']['Letter'];
 
-	let { letter }: { letter: Letter } = $props();
+	let { letter, onDeleted }: { letter: Letter; onDeleted?: () => void } = $props();
 
 	let isEditing = $state(false);
+	let busy = $state(false);
 </script>
 
 <div class="rounded-lg border border-gray-300 p-4">
-	<form method="post" action="?/updateLetter" class="flex flex-col gap-4" use:enhance>
+	<form
+		method="post"
+		action="?/updateLetter"
+		class="flex flex-col gap-4"
+		use:enhance={() => {
+			busy = true;
+			return async ({ result, update }) => {
+				await update();
+				busy = false;
+				if (result.type === 'success') {
+					isEditing = false;
+					// A successful delete lands here too (via formaction).
+					const actionData = result.data as { action?: unknown } | null;
+					if (actionData?.action === 'deleteLetter') {
+						onDeleted?.();
+					}
+				}
+			};
+		}}
+	>
 		<div class="flex flex-col gap-2">
 			<Label for="letterTitle-{letter.id}">Title</Label>
 			{#if isEditing}
@@ -50,8 +70,15 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input class="flex-3" type="submit" value="Update" />
-				<Button class="flex-1" variant="destructive" type="submit" formaction="?/deleteLetter">
+				<Input class="flex-3" type="submit" value={busy ? 'Saving…' : 'Update'} disabled={busy} />
+				<Button
+					class="flex-1"
+					variant="destructive"
+					type="submit"
+					formaction="?/deleteLetter"
+					disabled={busy}
+					aria-label="Delete letter"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						width="24"
@@ -88,8 +115,7 @@
 						stroke-width="2"
 						stroke-linecap="round"
 						stroke-linejoin="round"
-						class="lucide lucide-arrow-right"
-						><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
+						class="lucide lucide-arrow-right"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg
 					>
 				</Button>
 			{/if}

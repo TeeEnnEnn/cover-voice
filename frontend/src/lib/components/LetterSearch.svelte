@@ -11,12 +11,16 @@
 		letters = [],
 		selected = null,
 		onSelect,
-		label = 'letter'
+		label = 'letter',
+		onCreateNew,
+		onDeleted
 	}: {
 		letters: Letter[];
 		selected: Letter | null;
 		onSelect: (letter: Letter) => void;
 		label?: string;
+		onCreateNew?: () => void;
+		onDeleted?: () => void;
 	} = $props();
 
 	let query = $state('');
@@ -26,10 +30,16 @@
 <div class="flex flex-col gap-2">
 	<div>
 		{#if selected}
-			<LetterTeaser letter={selected} />
+			<LetterTeaser
+				letter={selected}
+				onDeleted={() => {
+					onDeleted?.();
+					document.getElementById('search-letters')?.focus();
+				}}
+			/>
 		{/if}
 	</div>
-	<SearchInput bind:value={query} placeholder={`Search ${label}s...`} />
+	<SearchInput bind:value={query} inputId="search-letters" placeholder={`Search ${label}s...`} />
 	{#each filtered as letter (letter.id)}
 		<button
 			onclick={() => {
@@ -41,6 +51,9 @@
 	{:else}
 		<p class="text-sm text-muted-foreground">
 			{letters.length === 0 ? `No ${label}s yet.` : `No ${label}s match “${query}”.`}
+			{#if letters.length === 0 && onCreateNew}
+				<button type="button" class="underline" onclick={onCreateNew}>Create one</button>
+			{/if}
 		</p>
 	{/each}
 </div>

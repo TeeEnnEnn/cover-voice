@@ -212,9 +212,9 @@ export const actions = {
 		const api = createApiClient(fetch, cookie);
 		const { data, error: err } = await api.DELETE('/api/variables/{id}', {
 			params: {
-				path: { id: variableId }
-			},
-			query: force ? { force: 'true' as const } : {}
+				path: { id: variableId },
+				query: force ? { force: 'true' as const } : {}
+			}
 		});
 
 		if (err) {
@@ -276,9 +276,9 @@ export const actions = {
 		const api = createApiClient(fetch, cookie);
 		const { error: err } = await api.DELETE('/api/blocks/{id}', {
 			params: {
-				path: { id: blockId }
-			},
-			query: force ? { force: 'true' as const } : {}
+				path: { id: blockId },
+				query: force ? { force: 'true' as const } : {}
+			}
 		});
 
 		if (err) {

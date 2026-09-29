@@ -9,6 +9,7 @@
 	import type { components } from '@/api/schema.js';
 	import { goto } from '$app/navigation';
 	import { enhance } from '$app/forms';
+	import { pushToast } from '$lib/stores/toast.svelte';
 
 	type Block = components['schemas']['Block'];
 	type Variable = components['schemas']['Variable'];
@@ -36,6 +37,38 @@
 	let creatingNewLetter = $state(false);
 	let creatingNewBlock = $state(false);
 	let creatingNewVariable = $state(false);
+	let letterSubmitting = $state(false);
+	let blockSubmitting = $state(false);
+	let variableSubmitting = $state(false);
+
+	function formToast(
+		f: Record<string, unknown>
+	): { kind: 'success' | 'error'; message: string } | null {
+		if (f.success === true) {
+			if (f.action === 'newLetter')
+				return { kind: 'success', message: 'Letter created — opening editor…' };
+			if (f.action === 'newBlock') return { kind: 'success', message: 'Block created.' };
+			if (f.action === 'newVariable') return { kind: 'success', message: 'Variable created.' };
+			if (f.action === 'deleteBlock' || 'deleteBlock' in f)
+				return { kind: 'success', message: 'Block deleted.' };
+			if (f.action === 'deleteVariable' || 'deleteVariable' in f)
+				return { kind: 'success', message: 'Variable deleted.' };
+			if (f.action === 'deleteLetter') return { kind: 'success', message: 'Letter deleted.' };
+			if ('updateBlock' in f || 'updateVariable' in f || f.action === 'updateLetter')
+				return { kind: 'success', message: 'Saved.' };
+			return null;
+		}
+		if (typeof f.message === 'string' && f.message) return { kind: 'error', message: f.message };
+		return null;
+	}
+
+	let lastForm: unknown = null;
+	$effect(() => {
+		if (!form || form === lastForm) return;
+		lastForm = form;
+		const toast = formToast(form as Record<string, unknown>);
+		if (toast) pushToast(toast.kind, toast.message);
+	});
 
 	$effect(() => {
 		if (form?.action === 'newLetter' && form?.success) {
@@ -80,11 +113,6 @@
 		<h2 class="text-4xl font-thin">{greeting}, <span class="">{user.name}</span></h2>
 		<small class="text-lg font-light text-gray-600">{second_greeting}</small>
 	</hgroup>
-	{#if form && !form.success && form.message}
-		<p class="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-red-600" role="alert">
-			{form.message}
-		</p>
-	{/if}
 
 	<div>
 		<div class="grid w-full grid-cols-1 gap-10 lg:grid-cols-3">
@@ -103,6 +131,12 @@
 								selectedLetter = letter;
 							}}
 							label="letter"
+							onCreateNew={() => {
+								creatingNewLetter = true;
+							}}
+							onDeleted={() => {
+								selectedLetter = null;
+							}}
 						/>
 					{/if}
 				</div>
@@ -114,7 +148,13 @@
 								action="?/newLetter"
 								method="post"
 								class="flex flex-col gap-4 font-light"
-								use:enhance
+								use:enhance={() => {
+									letterSubmitting = true;
+									return async ({ update }) => {
+										letterSubmitting = false;
+										await update();
+									};
+								}}
 							>
 								<h4 class="text-xl">Add a new letter</h4>
 								<div>
@@ -125,7 +165,11 @@
 									<Label for="letterDescription" class="text-lg font-light">Description</Label>
 									<Textarea name="letterDescription" id="letterDescription" />
 								</div>
-								<Input type="submit" value="Create" />
+								<Input
+									type="submit"
+									value={letterSubmitting ? 'Creating…' : 'Create'}
+									disabled={letterSubmitting}
+								/>
 							</form>
 						</div>
 					{/if}
@@ -149,6 +193,12 @@
 								label="block"
 								kind="block"
 								usages={blockUsages}
+								onCreateNew={() => {
+									creatingNewBlock = true;
+								}}
+								onDeleted={() => {
+									selectedBlock = null;
+								}}
 							/>
 						{/if}
 					</div>
@@ -160,7 +210,13 @@
 									action="?/newBlock"
 									method="post"
 									class="flex flex-col gap-4 font-light"
-									use:enhance
+									use:enhance={() => {
+										blockSubmitting = true;
+										return async ({ update }) => {
+											blockSubmitting = false;
+											await update();
+										};
+									}}
 								>
 									<h4 class="text-xl">Add a new block</h4>
 									<div>
@@ -171,12 +227,13 @@
 										<Label for="blockValue" class="text-lg font-light">block value</Label>
 										<Textarea name="blockValue" id="blockValue" required />
 									</div>
-									<Input type="submit" value="Create" />
+									<Input
+										type="submit"
+										value={blockSubmitting ? 'Creating…' : 'Create'}
+										disabled={blockSubmitting}
+									/>
 								</form>
 							</div>
-						{/if}
-						{#if form?.action === 'newBlock' && form?.success}
-							<p class="text-sm text-green-700" role="status">Block created.</p>
 						{/if}
 					</div>
 				</div>
@@ -197,6 +254,12 @@
 								label="variable"
 								kind="variable"
 								usages={variableUsages}
+								onCreateNew={() => {
+									creatingNewVariable = true;
+								}}
+								onDeleted={() => {
+									selectedVariable = null;
+								}}
 							/>
 						{/if}
 					</div>
@@ -208,7 +271,13 @@
 									action="?/newVariable"
 									method="post"
 									class="flex flex-col gap-4 font-light"
-									use:enhance
+									use:enhance={() => {
+										variableSubmitting = true;
+										return async ({ update }) => {
+											variableSubmitting = false;
+											await update();
+										};
+									}}
 								>
 									<h4 class="text-xl">Add a new Variable</h4>
 									<div>
@@ -219,12 +288,13 @@
 										<Label for="variableValue" class="text-lg font-light">Value</Label>
 										<Textarea name="variableValue" id="variableValue" required />
 									</div>
-									<Input type="submit" value="Create" />
+									<Input
+										type="submit"
+										value={variableSubmitting ? 'Creating…' : 'Create'}
+										disabled={variableSubmitting}
+									/>
 								</form>
 							</div>
-						{/if}
-						{#if form?.action === 'newVariable' && form?.success}
-							<p class="text-sm text-green-700" role="status">Variable created.</p>
 						{/if}
 					</div>
 				</div>

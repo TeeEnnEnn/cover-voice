@@ -2,12 +2,19 @@
 	import { Button } from '@/components/ui/button/index.js';
 	import { Input } from '@/components/ui/input/index.js';
 
-	let { value = $bindable(''), placeholder = 'Search...' }: { value: string; placeholder?: string } =
-		$props();
+	let {
+		value = $bindable(''),
+		placeholder = 'Search...',
+		inputId
+	}: {
+		value: string;
+		placeholder?: string;
+		inputId?: string;
+	} = $props();
 </script>
 
 <div class="flex gap-2">
-	<Input class="flex-3" type="search" bind:value {placeholder} />
+	<Input class="flex-3" type="search" bind:value {placeholder} id={inputId} />
 	<Button
 		variant="destructive"
 		aria-label="Clear search"

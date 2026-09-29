@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import Button from './ui/button/button.svelte';
 
 	let {
@@ -8,7 +9,8 @@
 		deleteAction,
 		idField,
 		idValue,
-		onCancel
+		onCancel,
+		onDeleted
 	}: {
 		open: boolean;
 		heading: string;
@@ -17,7 +19,10 @@
 		idField: string;
 		idValue: string;
 		onCancel: () => void;
+		onDeleted?: () => void;
 	} = $props();
+
+	let deleting = $state(false);
 </script>
 
 {#if open}
@@ -45,11 +50,34 @@
 				{/each}
 			</ul>
 			<div class="mt-5 flex gap-2">
-				<Button class="flex-1" variant="outline" type="button" onclick={onCancel}>Cancel</Button>
-				<form method="post" action={deleteAction} class="flex-1">
+				<Button
+					class="flex-1"
+					variant="outline"
+					type="button"
+					disabled={deleting}
+					onclick={onCancel}>Cancel</Button
+				>
+				<form
+					method="post"
+					action={deleteAction}
+					class="flex-1"
+					use:enhance={() => {
+						deleting = true;
+						return async ({ result, update }) => {
+							await update();
+							deleting = false;
+							if (result.type === 'success') {
+								onCancel();
+								onDeleted?.();
+							}
+						};
+					}}
+				>
 					<input type="hidden" name={idField} value={idValue} />
 					<input type="hidden" name="force" value="true" />
-					<Button class="w-full" variant="destructive" type="submit">Delete anyway</Button>
+					<Button class="w-full" variant="destructive" type="submit" disabled={deleting}>
+						{deleting ? 'Deleting…' : 'Delete anyway'}
+					</Button>
 				</form>
 			</div>
 		</div>

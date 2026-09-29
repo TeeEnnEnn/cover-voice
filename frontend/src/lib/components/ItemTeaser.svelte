@@ -24,7 +24,8 @@
 		createdAt,
 		updatedAt,
 		kind = 'block',
-		usage = null
+		usage = null,
+		onDeleted
 	}: {
 		id: string;
 		name: string;
@@ -34,6 +35,7 @@
 		updatedAt: string;
 		kind?: 'block' | 'variable';
 		usage?: ItemUsage | null;
+		onDeleted?: () => void;
 	} = $props();
 
 	let isEditing = $state(false);
@@ -132,7 +134,12 @@
 						isEditing = false;
 					}}>Cancel</Button
 				>
-				<Input class="flex-3" type="submit" value={updating ? 'Updating…' : 'Update'} disabled={updating} />
+				<Input
+					class="flex-3"
+					type="submit"
+					value={updating ? 'Updating…' : 'Update'}
+					disabled={updating}
+				/>
 				<Button
 					class="flex-1"
 					variant="destructive"
@@ -177,6 +184,10 @@
 		idValue={id}
 		onCancel={() => {
 			confirmingDelete = false;
+		}}
+		onDeleted={() => {
+			confirmingDelete = false;
+			onDeleted?.();
 		}}
 	/>
 </div>
