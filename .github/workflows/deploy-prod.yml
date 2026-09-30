@@ -29,7 +29,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script_stop: true
           script: |
-            set -ex
             cd ~/app-prod
             PROJECT="${{ vars.COMPOSE_PROJECT_NAME }}"
 
@@ -47,7 +46,9 @@ jobs:
             mkdir -p ~/backups
 
             # Load DB credentials from .env
+            set +x
             set -a; [ -f .env ] && . ./.env; set +a
+            set -x
 
             # Safely check if 'db' is running without triggering ssh-action exit traps
             RUNNING_SERVICES=$(docker compose -p "$PROJECT" ps --services --filter "status=running" || true)
@@ -67,21 +68,21 @@ jobs:
 
             # Pull latest changes
             git fetch origin master
-            git reset --hard origin/master
+            git reset --hard ${{ github.event.workflow_run.head_sha }}
+            
+            UP_OK=0
+            docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans && UP_OK=1 || true
 
-            # Rebuild and start containers
-            docker compose -p "$PROJECT" --env-file .env up -d --build --remove-orphans
-
-            # Health check loop against the DB-aware endpoint (rebuilds plus
-            # migrations can take a while, hence the generous window).
             HEALTHY=0
-            for i in $(seq 1 20); do
-              if curl -fs http://localhost/api/health > /dev/null; then
-                HEALTHY=1
-                break
-              fi
-              sleep 6
-            done
+            if [ "$UP_OK" -eq 1 ]; then
+              for i in $(seq 1 20); do
+                if curl -fs http://localhost/api/health > /dev/null; then
+                  HEALTHY=1
+                  break
+                fi
+                sleep 6
+              done
+            fi
 
             if [ "$HEALTHY" -ne 1 ]; then
               echo "Health check failed - rolling back to $PREVIOUS_SHA"
