@@ -23,3 +23,7 @@ docker compose up backend --build
 3. install frontend and backend dependencies `npm install`
 4. run with docker `docker compose up --build -d`
 5. visit the site at `localhost`
+
+## Hosting
+
+This site is hosted on Hetzner and can be accessed at [https://cover-voice.dev](https://cover-voice.dev)
