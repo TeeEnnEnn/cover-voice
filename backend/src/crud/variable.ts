@@ -1,6 +1,5 @@
 import { db } from '../db/index.js';
 import {
-	blockTable,
 	blockVariableTable,
 	letterVariableTable,
 	variableTable

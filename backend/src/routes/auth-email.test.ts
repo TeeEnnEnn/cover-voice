@@ -101,19 +101,19 @@ describe('email verification', () => {
 	});
 });
 
-describe('password reset', () => {
-	async function verifiedAgent(email: string) {
-		const agent = testAgent();
-		await signUp(agent, email);
-		const token = verificationToken();
-		const verified = await agent
-			.get(`/api/auth/verify-email?token=${token}&callbackURL=/`)
-			.set('Origin', TRUSTED_ORIGIN);
-		expect([200, 302]).toContain(verified.status);
-		sentEmails.length = 0;
-		return agent;
-	}
+async function verifiedAgent(email: string) {
+	const agent = testAgent();
+	await signUp(agent, email);
+	const token = verificationToken();
+	const verified = await agent
+		.get(`/api/auth/verify-email?token=${token}&callbackURL=/`)
+		.set('Origin', TRUSTED_ORIGIN);
+	expect([200, 302]).toContain(verified.status);
+	sentEmails.length = 0;
+	return agent;
+}
 
+describe('password reset', () => {
 	it('resets the password via emailed link and invalidates the old one', async () => {
 		const email = 'reset-me@example.com';
 		const agent = await verifiedAgent(email);

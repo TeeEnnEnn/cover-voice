@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import type { Response } from 'express';
-import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import {
 	createLetter,

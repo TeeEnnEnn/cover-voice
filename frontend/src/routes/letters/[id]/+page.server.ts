@@ -1,11 +1,7 @@
-import type { components } from '$lib/api/schema';
 import type { PageServerLoad, Actions } from './$types';
 import { error, fail } from '@sveltejs/kit';
 import { createApiClient } from '$lib/api/client';
 import { requireUser } from '$lib/server/auth';
-
-type Block = components['schemas']['Block'];
-type Variable = components['schemas']['Variable'];
 
 /** Extracts the backend's error message ({ error: { message } }) when present. */
 function apiMessage(err: unknown): string | null {

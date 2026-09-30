@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import z from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import { getBlocks, createBlock, deleteBlock, updateBlock } from '../crud/block.js';
 import { getBlockUsage } from '../crud/usage.js';
