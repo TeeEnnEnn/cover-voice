@@ -454,7 +454,7 @@
 </script>
 
 <div class="container mx-auto my-8 flex flex-col gap-8">
-	<header class="px-4 flex flex-col gap-4">
+	<header class="flex flex-col gap-4 px-4">
 		<div class="flex gap-2 lg:hidden" role="tablist" aria-label="Editor view">
 			<Button
 				variant={mobileTab === 'write' ? 'default' : 'outline'}

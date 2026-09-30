@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	emailOutbox,
-	sendPasswordResetEmail,
-	sendVerificationEmail
-} from './email.js';
+import { emailOutbox, sendPasswordResetEmail, sendVerificationEmail } from './email.js';
 
 describe('email templates', () => {
 	it('verification mail links straight to the backend mount', async () => {

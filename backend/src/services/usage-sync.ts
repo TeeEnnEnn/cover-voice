@@ -30,11 +30,17 @@ function resolveIds(
 	return Array.from(ids);
 }
 
-async function userBlocks(transaction: DatabaseOrTransaction, userId: string): Promise<Array<BlockRow>> {
+async function userBlocks(
+	transaction: DatabaseOrTransaction,
+	userId: string
+): Promise<Array<BlockRow>> {
 	return transaction.select().from(blockTable).where(eq(blockTable.userId, userId));
 }
 
-async function userVariables(transaction: DatabaseOrTransaction, userId: string): Promise<Array<VariableRow>> {
+async function userVariables(
+	transaction: DatabaseOrTransaction,
+	userId: string
+): Promise<Array<VariableRow>> {
 	return transaction.select().from(variableTable).where(eq(variableTable.userId, userId));
 }
 
@@ -152,7 +158,10 @@ export async function resyncUserLetters(
 ): Promise<void> {
 	const allBlocks = blocks ?? (await userBlocks(transaction, userId));
 	const allVariables = variables ?? (await userVariables(transaction, userId));
-	const letters = await transaction.select().from(letterTable).where(eq(letterTable.userId, userId));
+	const letters = await transaction
+		.select()
+		.from(letterTable)
+		.where(eq(letterTable.userId, userId));
 	for (const letter of letters) {
 		const sections = toLetterSections(letter.rawContent);
 		if (sections === null) {
@@ -168,7 +177,10 @@ export async function resyncUserLetters(
  * `block_variable` rows plus every letter's links. Run after variable
  * create/rename, which can change resolution everywhere.
  */
-export async function resyncUserUsage(transaction: DatabaseOrTransaction, userId: string): Promise<void> {
+export async function resyncUserUsage(
+	transaction: DatabaseOrTransaction,
+	userId: string
+): Promise<void> {
 	const [blocks, variables] = await Promise.all([
 		userBlocks(transaction, userId),
 		userVariables(transaction, userId)

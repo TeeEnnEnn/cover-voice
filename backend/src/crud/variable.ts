@@ -1,9 +1,5 @@
 import { db } from '../db/index.js';
-import {
-	blockVariableTable,
-	letterVariableTable,
-	variableTable
-} from '../db/schema.js';
+import { blockVariableTable, letterVariableTable, variableTable } from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateVariableInput, UpdateVariableInput } from '../schemas/variables.js';
 import { resyncUserUsage } from '../services/usage-sync.js';

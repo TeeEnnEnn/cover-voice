@@ -1,4 +1,8 @@
-export function filterBy<T>(items: T[] | undefined, query: string, getText: (item: T) => string): T[] {
+export function filterBy<T>(
+	items: T[] | undefined,
+	query: string,
+	getText: (item: T) => string
+): T[] {
 	const q = query.trim().toLowerCase();
 	if (!q) return items ?? [];
 	return (items ?? []).filter((i) => getText(i).toLowerCase().includes(q));

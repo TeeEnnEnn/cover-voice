@@ -135,11 +135,11 @@
 						>
 					</summary>
 					{#if faq.hasMarkup}
-					<p class="mt-2 text-sm text-muted-foreground">{@html faq.a}</p>
+						<p class="mt-2 text-sm text-muted-foreground">{@html faq.a}</p>
 					{:else}
-					<p class="mt-2 text-sm text-muted-foreground">{faq.a}</p>
+						<p class="mt-2 text-sm text-muted-foreground">{faq.a}</p>
 					{/if}
-					</details>
+				</details>
 			{/each}
 		</div>
 	</section>
@@ -150,7 +150,7 @@
 			class="flex flex-col items-center gap-4 bg-cover-voice-main px-6 py-12 text-center text-white"
 		>
 			<h2 class="max-w-2xl text-3xl font-semibold">Ready to write your next cover letter?</h2>
-			<p class="max-w-xl text-xl font-bold ">
+			<p class="max-w-xl text-xl font-bold">
 				Set up your blocks once, then generate tailored letters in minutes.
 			</p>
 			{#if data.user}
