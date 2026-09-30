@@ -16,6 +16,7 @@
 		"format": "prettier --write .",
 		"verify": "npm run check && npm run lint",
 		"test:e2e": "playwright test",
+		"pretest:e2e": "npm --prefix ../backend --silent run db:ensure-test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed"
 	},

@@ -18,6 +18,7 @@
 		"verify": "npm run typecheck && npm run lint && npm test",
 		"generate:openapi": "tsx src/openapi/generate.ts",
 		"db:generate": "drizzle-kit generate",
+		"db:ensure-test": "tsx tests/ensure-test-db.ts",
 		"db:migrate": "drizzle-kit migrate",
 		"db:push": "drizzle-kit push",
 		"test": "vitest run",
