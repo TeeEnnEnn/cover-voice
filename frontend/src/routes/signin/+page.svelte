@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import AuthCard from '$lib/components/AuthCard.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
@@ -67,6 +68,11 @@
 	}
 </script>
 
+<Seo
+	title="Sign in — Cover Voice"
+	description="Sign in to Cover Voice to manage your blocks, variables, and letters."
+	noindex
+/>
 <AuthCard title="Sign In" description="Enter your email and password to sign in to Cover voice.">
 	<form onsubmit={handleSubmit}>
 		<FieldGroup>

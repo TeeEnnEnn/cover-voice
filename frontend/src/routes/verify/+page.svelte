@@ -1,10 +1,16 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { page } from '$app/state';
 	import AuthCard from '$lib/components/AuthCard.svelte';
 
 	let errorParam = $derived(page.url.searchParams.get('error'));
 </script>
 
+<Seo
+	title="Verify email — Cover Voice"
+	description="Verify your email address to activate your Cover Voice account."
+	noindex
+/>
 <AuthCard title="Email verification">
 	{#if errorParam}
 		<p class="text-sm text-red-600" role="alert">

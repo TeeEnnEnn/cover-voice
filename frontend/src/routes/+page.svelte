@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import Button from '$lib/components/ui/button/button.svelte';
 
 	let { data } = $props();
@@ -46,6 +47,23 @@
 </script>
 
 <div class="mx-auto w-full max-w-5xl px-4">
+	<Seo
+		title="Cover Voice — Cover letters in your own voice"
+		description="Turn your best paragraphs and details into reusable building blocks, so every job application starts halfway done — and still sounds like you."
+		canonical={`${data.origin}/`}
+		image={`${data.origin}/Cover-Voice_512x512.png`}
+		jsonLd={{
+			'@context': 'https://schema.org',
+			'@type': 'WebApplication',
+			name: 'Cover Voice',
+			description:
+				'Turn your best paragraphs and details into reusable building blocks for tailored cover letters.',
+			url: `${data.origin}/`,
+			applicationCategory: 'BusinessApplication',
+			operatingSystem: 'Web',
+			offers: { '@type': 'Offer', price: '0' }
+		}}
+	/>
 	<!-- Hero + top CTA -->
 	<section class="flex flex-col items-center gap-6 py-20 text-center md:py-28">
 		<img

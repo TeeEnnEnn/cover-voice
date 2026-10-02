@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { Input } from '@/components/ui/input/index.js';
 	import { Textarea } from '@/components/ui/textarea/index.js';
 	import { Label } from '@/components/ui/label/index.js';
@@ -110,6 +111,11 @@
 </script>
 
 <div class="container mx-auto my-24 space-y-16">
+	<Seo
+		title="Dashboard — Cover Voice"
+		description="Your Cover Voice dashboard — manage letters, blocks, and variables."
+		noindex
+	/>
 	<div class="flex items-start justify-between gap-4">
 		<hgroup>
 			<h2 class="text-3xl font-semibold">{greeting}, <span class="">{user.name}</span></h2>

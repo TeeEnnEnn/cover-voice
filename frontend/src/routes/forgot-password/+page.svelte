@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import AuthCard from '$lib/components/AuthCard.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import { FieldGroup, Field, FieldLabel } from '$lib/components/ui/field/index.js';
@@ -30,6 +31,11 @@
 	}
 </script>
 
+<Seo
+	title="Forgot password — Cover Voice"
+	description="Request a password reset link for your Cover Voice account."
+	noindex
+/>
 <AuthCard
 	title="Forgot password"
 	description="Enter your email and we will send you a reset link if an account exists."

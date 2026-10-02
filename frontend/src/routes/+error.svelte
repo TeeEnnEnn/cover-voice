@@ -1,8 +1,9 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { page } from '$app/state';
 </script>
 
-<svelte:head><title>Something went wrong · Cover Voice</title></svelte:head>
+<Seo title="Something went wrong — Cover Voice" description="An error occurred." noindex />
 
 <div class="container mx-auto my-24 max-w-lg space-y-4 px-4 text-center">
 	<h1 class="text-3xl font-semibold">{page.status}: {page.error?.message ?? 'Unknown error'}</h1>

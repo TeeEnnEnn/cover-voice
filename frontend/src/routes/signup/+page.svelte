@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import AuthCard from '$lib/components/AuthCard.svelte';
 	import { Button } from '$lib/components/ui/button/index.js';
 	import {
@@ -57,6 +58,11 @@
 	}
 </script>
 
+<Seo
+	title="Sign up — Cover Voice"
+	description="Create a Cover Voice account to start building reusable cover letters."
+	noindex
+/>
 <AuthCard
 	title="Sign Up"
 	description="Enter your email, password and username to get started with Cover voice."

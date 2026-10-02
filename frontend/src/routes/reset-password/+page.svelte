@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import AuthCard from '$lib/components/AuthCard.svelte';
@@ -51,6 +52,11 @@
 	}
 </script>
 
+<Seo
+	title="Reset password — Cover Voice"
+	description="Choose a new password for your Cover Voice account."
+	noindex
+/>
 <AuthCard title="Reset password" description="Choose a new password for your account.">
 	{#if errorParam}
 		<p class="text-sm text-red-600" role="alert">

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Seo from '$lib/components/Seo.svelte';
 	import { slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { pushToast } from '$lib/stores/toast.svelte';
@@ -454,6 +455,11 @@
 </script>
 
 <div class="container mx-auto my-8 flex flex-col gap-8">
+	<Seo
+		title={`${data.letter.title} — Cover Voice`}
+		description={data.letter.description ?? 'Edit your cover letter with reusable blocks and variables.'}
+		noindex
+	/>
 	<header class="flex flex-col gap-4 px-4">
 		<div class="flex gap-2 lg:hidden" role="tablist" aria-label="Editor view">
 			<Button
