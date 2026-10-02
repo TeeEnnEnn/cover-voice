@@ -26,7 +26,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           fingerprint: ${{ secrets.SSH_FINGERPRINT }}
-          script_stop: true
           script: |
             set -eu
             cd ~/app-prod
