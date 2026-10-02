@@ -117,6 +117,7 @@ jobs:
           BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
           BETTER_AUTH_URL: http://localhost
           DOMAIN: http://localhost
+          ORIGIN: http://localhost
           # Dummies satisfy compose's required vars (compose.yaml :? checks).
           # Nothing sends emails - tests/e2e stub the sender.
           RESEND_API_KEY: ci-only-resend-key
