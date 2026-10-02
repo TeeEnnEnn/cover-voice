@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Seo from '$lib/components/Seo.svelte';
+	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { pushToast } from '$lib/stores/toast.svelte';
@@ -53,6 +54,13 @@
 	let previewUrl = $state<string | null>(null);
 	let previewLoading = $state(false);
 	let previewHint = $state<string | null>('Press Update Preview to render the current sections.');
+
+	// firefox on android does not have a pdf previewer - so we need to fallback to preview in new tab
+	let isAndroidFirefox = $state(false);
+
+	onMount(() => {
+		isAndroidFirefox = /Android.+Firefox\//.test(navigator.userAgent);
+	});
 	let lastPreviewAt = $state<string | null>(null);
 	let mobileTab = $state<'write' | 'preview'>('write');
 	let downloading = $state(false);
@@ -457,7 +465,8 @@
 <div class="container mx-auto my-8 flex flex-col gap-8">
 	<Seo
 		title={`${data.letter.title} — Cover Voice`}
-		description={data.letter.description ?? 'Edit your cover letter with reusable blocks and variables.'}
+		description={data.letter.description ??
+			'Edit your cover letter with reusable blocks and variables.'}
 		noindex
 	/>
 	<header class="flex flex-col gap-4 px-4">
@@ -947,9 +956,9 @@
 			role="tabpanel"
 			aria-label="Preview"
 		>
-			<div class="mb-3 flex items-center justify-between gap-2">
+			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 				<h3 class="text-lg font-semibold">Preview</h3>
-				<div class="flex gap-2">
+				<div class="flex flex-wrap gap-2">
 					<Button
 						variant="secondary"
 						type="button"
@@ -957,6 +966,15 @@
 						onclick={updatePreviewNow}
 					>
 						{previewLoading ? 'Rendering…' : 'Update Preview'}
+					</Button>
+					<Button
+						href={previewUrl ?? undefined}
+						target="_blank"
+						rel="noopener noreferrer"
+						variant="outline"
+						disabled={!previewUrl}
+					>
+						Open
 					</Button>
 					<Button
 						type="button"
@@ -986,8 +1004,17 @@
 				</p>
 			{/if}
 			{#if previewUrl}
-				<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full bg-white"
-				></iframe>
+				{#if isAndroidFirefox}
+					<div class="border border-border bg-muted/50 p-4 text-sm" role="note">
+						<p>Inline PDF preview isn't supported in this browser.</p>
+						<p class="mt-1 text-muted-foreground">
+							Use Open to view it in a new tab, or Download to save it.
+						</p>
+					</div>
+				{:else}
+					<iframe src={previewUrl} title="Letter PDF preview" class="h-[70vh] w-full bg-white"
+					></iframe>
+				{/if}
 			{:else}
 				<p class="text-sm text-muted-foreground">
 					Nothing rendered yet. Write your sections, then press Update Preview.
