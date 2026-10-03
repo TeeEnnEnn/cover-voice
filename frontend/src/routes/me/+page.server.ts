@@ -95,7 +95,7 @@ export const actions = {
 		const { data: letterData, error: letterError } = await api.POST('/api/letters', {
 			body: {
 				title: letterName,
-				description: letterDescription ?? ""
+				description: letterDescription ?? ''
 			}
 		});
 
