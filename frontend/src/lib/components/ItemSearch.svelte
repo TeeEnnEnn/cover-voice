@@ -77,7 +77,7 @@
 		{/if}
 	</div>
 	<SearchInput bind:value={query} inputId={`search-${kind}`} placeholder={`Search ${label}s...`} />
-	<div class="no-scrollbar max-h-72 min-h-0 scroll-fade overflow-y-auto">
+	<div class="max-h-72 min-h-0 overflow-y-auto pr-1">
 		<div class="flex flex-col gap-2">
 			{#each filtered as item (item.id)}
 				<button

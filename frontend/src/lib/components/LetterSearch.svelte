@@ -40,7 +40,7 @@
 		{/if}
 	</div>
 	<SearchInput bind:value={query} inputId="search-letters" placeholder={`Search ${label}s...`} />
-	<div class="no-scrollbar max-h-[50vh] min-h-0 scroll-fade overflow-y-auto">
+	<div class="max-h-[50vh] min-h-0 overflow-y-auto pr-1">
 		<div class="flex flex-col gap-2">
 			{#each filtered as letter (letter.id)}
 				<button

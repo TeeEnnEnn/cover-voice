@@ -110,7 +110,7 @@
 		second_greeting_choices[Math.floor((Math.random() * 100) % second_greeting_choices.length)];
 </script>
 
-<div class="container mx-auto my-24 space-y-16">
+<div class="container mx-auto my-24 space-y-16 px-4 md:px-0">
 	<Seo
 		title="Dashboard — Cover Voice"
 		description="Your Cover Voice dashboard — manage letters, blocks, and variables."
@@ -177,11 +177,11 @@
 								<h4 class="text-xl">Add a new letter</h4>
 								<div>
 									<Label for="letterName" class="text-lg font-light">Title</Label>
-									<Input type="text" id="letterName" name="letterName" />
+									<Input type="text" id="letterName" name="letterName" required />
 								</div>
 								<div>
 									<Label for="letterDescription" class="text-lg font-light">Description</Label>
-									<Textarea name="letterDescription" id="letterDescription" />
+									<Textarea name="letterDescription" id="letterDescription" rows={2} />
 								</div>
 								<Button type="submit" disabled={letterSubmitting}
 									>{letterSubmitting ? 'Creating…' : 'Create'}</Button
@@ -249,6 +249,7 @@
 										<VariableAutocompleteTextarea
 											name="blockValue"
 											id="blockValue"
+											rows={4}
 											required
 											suggestions={variableItems}
 										/>
@@ -314,7 +315,7 @@
 									</div>
 									<div>
 										<Label for="variableValue" class="text-lg font-light">Value</Label>
-										<Textarea name="variableValue" id="variableValue" required />
+										<Textarea name="variableValue" id="variableValue" rows={4} required />
 									</div>
 									<Button type="submit" disabled={variableSubmitting}
 										>{variableSubmitting ? 'Creating…' : 'Create'}</Button

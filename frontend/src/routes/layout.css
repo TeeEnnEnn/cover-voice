@@ -37,6 +37,36 @@ button {
 	color: #ffffff;
 }
 
+/* Global thin scrollbars matching site style. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+*::-webkit-scrollbar-track {
+	background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+	background-color: var(--border);
+	border-radius: 999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+	background-color: var(--muted-foreground);
+}
+
+label:has(+ input[required], + textarea[required])::after, /* label with adjacent sibling that is required */
+label:has(+ div input[required], + div textarea[required])::after, /* label with sibling div that nests required input */
+div:has(> input[required], > textarea[required]) > label::after, /* div that has a child required input  */
+div:has(> div input[required], > div textarea[required]) > label::after, /* div that has a child div that has a child with a required input */
+div:has(+ input[required], + textarea[required], + div input[required], + div textarea[required]) /* div that has required input siblings or sibling divs that nest required inputs */
+	> label::after {
+	content: '*';
+	color: var(--primary);
+}
+
 @theme {
 	--color-cover-voice-main: #ff206e;
 	--color-cover-voice-secondary: #41ead4;

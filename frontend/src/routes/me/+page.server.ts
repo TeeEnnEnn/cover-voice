@@ -84,10 +84,10 @@ export const actions = {
 		const letterName = formData.get('letterName')?.toString().trim();
 		const letterDescription = formData.get('letterDescription')?.toString().trim();
 
-		if (!letterName || !letterDescription) {
+		if (!letterName) {
 			return fail(400, {
 				action: 'newLetter',
-				message: 'Letter name and description are required.'
+				message: 'Letter name is required.'
 			});
 		}
 
@@ -95,7 +95,7 @@ export const actions = {
 		const { data: letterData, error: letterError } = await api.POST('/api/letters', {
 			body: {
 				title: letterName,
-				description: letterDescription
+				description: letterDescription ?? ""
 			}
 		});
 

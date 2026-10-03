@@ -9,6 +9,7 @@
 	import { Label } from '$lib/components/ui/label/index.js';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import VariableAutocompleteTextarea from '$lib/components/VariableAutocompleteTextarea.svelte';
+	import ReferenceList from '$lib/components/ReferenceList.svelte';
 	import type { components } from '$lib/api/schema';
 
 	type LetterGeneration = components['schemas']['LetterGenerationSchema'];
@@ -462,7 +463,7 @@
 	let variablesOpen = $state(true);
 </script>
 
-<div class="container mx-auto my-8 flex flex-col gap-8">
+<div class="container mx-auto my-8 flex flex-col gap-8 px-4 md:px-0">
 	<Seo
 		title={`${data.letter.title} — Cover Voice`}
 		description={data.letter.description ??
@@ -803,29 +804,14 @@
 				</div>
 				{#if variablesOpen}
 					<div id="variables-body" transition:slide>
-						{#if data.variableError}
-							<p class="text-sm text-red-600">{data.variableError}</p>
-						{:else}
-							<ul class="mb-2 flex flex-col gap-1">
-								{#each data.variables as variable (variable.id)}
-									<li class="text-sm">
-										<code>{`{{${variable.name}}}`}</code>
-										<span class="text-muted-foreground">= {variable.value}</span>
-									</li>
-								{:else}
-									<li class="text-sm text-muted-foreground">
-										No variables yet.
-										<button
-											type="button"
-											class="underline"
-											onclick={() => {
-												settingNewVariable = true;
-											}}>Create one</button
-										>.
-									</li>
-								{/each}
-							</ul>
-						{/if}
+						<ReferenceList
+							kind="variable"
+							items={data.variables}
+							error={data.variableError}
+							onCreate={() => {
+								settingNewVariable = true;
+							}}
+						/>
 						<Button
 							variant={settingNewVariable ? 'destructive' : 'default'}
 							onclick={() => {
@@ -886,29 +872,14 @@
 				</div>
 				{#if blocksOpen}
 					<div id="blocks-body" transition:slide>
-						{#if data.blockError}
-							<p class="text-sm text-red-600">{data.blockError}</p>
-						{:else}
-							<ul class="mb-2 flex flex-col gap-1">
-								{#each data.blocks as block (block.id)}
-									<li class="text-sm">
-										<code>{`{%${block.name}%}`}</code>
-										<span class="text-muted-foreground">= {block.value}</span>
-									</li>
-								{:else}
-									<li class="text-sm text-muted-foreground">
-										No blocks yet.
-										<button
-											type="button"
-											class="underline"
-											onclick={() => {
-												settingNewBlock = true;
-											}}>Create one</button
-										>.
-									</li>
-								{/each}
-							</ul>
-						{/if}
+						<ReferenceList
+							kind="block"
+							items={data.blocks}
+							error={data.blockError}
+							onCreate={() => {
+								settingNewBlock = true;
+							}}
+						/>
 						<Button
 							variant={settingNewBlock ? 'destructive' : 'default'}
 							onclick={() => {
