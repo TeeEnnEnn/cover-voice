@@ -204,3 +204,92 @@ describe('collectLetterRefs', () => {
 		expect(outcome.error.type).toBe('block');
 	});
 });
+
+describe('reserved variables', () => {
+	// 2026-10-06 is a Tuesday.
+	const now = new Date(2026, 9, 6, 12, 0, 0);
+	const emptyBlocks: typeof blocks = [];
+	const emptyVariables: typeof variables = [];
+
+	it('resolves each reserved name to the current date', () => {
+		const outcome = replaceText(
+			'{{year}}-{{month_word}}-{{month_num}}-{{day_word}}-{{day_num}}',
+			emptyBlocks,
+			emptyVariables,
+			now
+		);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText).toBe('2026-October-10-Tuesday-06');
+	});
+
+	it('zero-pads single-digit month and day numbers', () => {
+		// 2026-01-05 is a Monday.
+		const outcome = replaceText(
+			'{{month_num}}/{{day_num}}/{{year}}',
+			emptyBlocks,
+			emptyVariables,
+			new Date(2026, 0, 5, 12, 0, 0)
+		);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText).toBe('01/05/2026');
+	});
+
+	it('resolves reserved names introduced by block expansion', () => {
+		const dateBlocks = [
+			{
+				id: 'block-date',
+				name: 'dated',
+				value: 'Dated {{day_word}}, {{month_word}} {{day_num}}, {{year}}',
+				userId: 'u1',
+				createdAt: new Date(),
+				updatedAt: new Date()
+			}
+		];
+		const outcome = replaceText('{% dated %}', dateBlocks, emptyVariables, now);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText).toBe('Dated Tuesday, October 06, 2026');
+		expect(outcome.value.blocksUsed).toEqual(['block-date']);
+	});
+
+	it('takes precedence over a same-named user variable', () => {
+		const legacy = [
+			{
+				id: 'var-year',
+				name: 'year',
+				value: '1999',
+				userId: 'u1',
+				createdAt: new Date(),
+				updatedAt: new Date()
+			}
+		];
+		const outcome = replaceText('{{year}}', emptyBlocks, legacy, now);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText).toBe('2026');
+	});
+
+	it('contributes no variable ids so junction rows stay empty', () => {
+		const outcome = collectLetterRefs(
+			{
+				header: { text: null },
+				body: { text: '{{year}} {{name}}' },
+				footer: { text: null }
+			},
+			[],
+			variables,
+			now
+		);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText.body).toBe('2026 Ada');
+		expect(outcome.value.variableIds).toEqual(['var-1']);
+	});
+
+	it('still errors on genuinely unknown names', () => {
+		const outcome = replaceText('{{nope}}', emptyBlocks, emptyVariables, now);
+		expect(outcome.ok).toBe(false);
+	});
+});

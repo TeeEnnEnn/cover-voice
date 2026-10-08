@@ -10,6 +10,7 @@
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
 	import VariableAutocompleteTextarea from '$lib/components/VariableAutocompleteTextarea.svelte';
 	import ReferenceList from '$lib/components/ReferenceList.svelte';
+	import { isReservedVariableName, reservedVariableSuggestions } from '$lib/reserved-variables';
 	import type { components } from '$lib/api/schema';
 
 	type LetterGeneration = components['schemas']['LetterGenerationSchema'];
@@ -302,10 +303,13 @@
 
 	let menuItems = $derived.by(() => {
 		if (!menu) return [];
-		const pool = menu.kind === 'block' ? data.blocks : data.variables;
+		const pool =
+			menu.kind === 'block' ? data.blocks : [...data.variables, ...reservedVariableSuggestions()];
 		const q = menu.query.toLowerCase();
 		return pool.filter((item) => item.name.toLowerCase().includes(q)).slice(0, 8);
 	});
+
+	let variableSuggestions = $derived([...data.variables, ...reservedVariableSuggestions()]);
 
 	function caretCoords(textarea: HTMLTextAreaElement, wrap: HTMLElement) {
 		const mirror = document.createElement('div');
@@ -429,7 +433,7 @@
 			out.push({
 				name: m[1],
 				kind: 'variable',
-				known: data.variables.some((v) => v.name === m[1])
+				known: data.variables.some((v) => v.name === m[1]) || isReservedVariableName(m[1])
 			});
 		}
 		return out;
@@ -907,7 +911,7 @@
 										name="blockValue"
 										placeholder="value"
 										required
-										suggestions={data.variables}
+										suggestions={variableSuggestions}
 									/>
 								</div>
 								<Button type="submit" class="w-full">Add</Button>

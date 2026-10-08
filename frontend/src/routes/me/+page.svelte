@@ -9,6 +9,7 @@
 	import LetterSearch from '@/components/LetterSearch.svelte';
 	import CreateToggle from '@/components/CreateToggle.svelte';
 	import VariableAutocompleteTextarea from '@/components/VariableAutocompleteTextarea.svelte';
+	import { reservedVariableSuggestions } from '$lib/reserved-variables';
 	import type { components } from '@/api/schema.js';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { enhance } from '$app/forms';
@@ -37,6 +38,7 @@
 	let blockItems = $derived(blocks?.blocks ?? []);
 	let variableItems = $derived(variables?.variables ?? []);
 	let letterItems = $derived(letters?.letters ?? []);
+	let variableSuggestionItems = $derived([...variableItems, ...reservedVariableSuggestions()]);
 
 	let creatingNewLetter = $state(false);
 	let creatingNewBlock = $state(false);
@@ -210,7 +212,7 @@
 								label="block"
 								kind="block"
 								usages={blockUsages}
-								suggestions={variableItems}
+								suggestions={variableSuggestionItems}
 								onCreateNew={() => {
 									creatingNewBlock = true;
 								}}
@@ -251,7 +253,7 @@
 											id="blockValue"
 											rows={4}
 											required
-											suggestions={variableItems}
+											suggestions={variableSuggestionItems}
 										/>
 									</div>
 									<Button type="submit" disabled={blockSubmitting}

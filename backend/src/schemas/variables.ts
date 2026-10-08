@@ -1,5 +1,16 @@
 import z from 'zod';
 import { registry } from '../openapi/registry.js';
+import { isReservedVariableName } from '../services/reserved-variables.js';
+
+const reservedNameMessage =
+	"The following names are reserved: 'year', 'month_word', 'month_num', 'day_word', 'day_num'";
+
+const variableNameSchema = z
+	.string()
+	.trim()
+	.min(1)
+	.max(100)
+	.refine((name) => !isReservedVariableName(name), { message: reservedNameMessage });
 
 export const variableSchema = registry.register(
 	'Variable',
@@ -16,7 +27,7 @@ export const variableSchema = registry.register(
 export const createVariableSchema = registry.register(
 	'CreateVariableBody',
 	z.object({
-		name: z.string().trim().min(1).max(100).openapi({ example: 'linkedin' }),
+		name: variableNameSchema.openapi({ example: 'linkedin' }),
 		value: z.string().min(1).max(20000).openapi({ example: 'https://linkedin.com/...' })
 	})
 );
@@ -25,7 +36,7 @@ export const updateVariableSchema = registry.register(
 	'UpdateVariableBody',
 	z
 		.object({
-			name: z.string().trim().min(1).max(100).optional().openapi({ example: 'company_name' }),
+			name: variableNameSchema.optional().openapi({ example: 'company_name' }),
 			value: z.string().min(1).max(20000).optional().openapi({ example: 'New company name' })
 		})
 		.refine((body) => Object.keys(body).length > 0, { message: 'Nothing to update' })

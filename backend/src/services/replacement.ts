@@ -1,4 +1,5 @@
 import type { blockTable, variableTable } from '../db/schema.js';
+import { getReservedVariableValues } from './reserved-variables.js';
 
 type Block = typeof blockTable.$inferSelect; // createdAt: Date
 type Variable = typeof variableTable.$inferSelect; // createdAt: Date
@@ -17,6 +18,12 @@ type SubstitutionPoint = {
 export type ReplacementEntityData = {
 	id: string;
 	value: string;
+	/**
+	 * When true the entry still substitutes but its id is excluded from
+	 * `blocksUsed` / `variablesUsed` (used for reserved variables, which
+	 * have no row to link in the usage junction tables).
+	 */
+	noTrack?: boolean;
 };
 
 export type ReplacementResult = {
@@ -184,7 +191,7 @@ function replaceDelimitedText(
 				}
 			};
 		}
-		entitiesUsed.add(replaced.id);
+		if (!replaced.noTrack) entitiesUsed.add(replaced.id);
 		newString += text.slice(lastInsertAt, sub.captureStart - 2) + replaced.value; // -2 for the two openings --- we do not include them in the final output
 		lastInsertAt = sub.captureEnd + 2; // +2 for the two closing --- we do not include them in the final output
 	}
@@ -224,7 +231,12 @@ export function replaceVariables(
 	return replaceDelimitedText(text, variables, 'variable');
 }
 
-export function replaceText(text: string, blocks: Block[], variables: Variable[]): ReplaceOutcome {
+export function replaceText(
+	text: string,
+	blocks: Block[],
+	variables: Variable[],
+	now: Date = new Date()
+): ReplaceOutcome {
 	/** entity_name: { entity_id, entity_value } */
 	const blockMap = new Map<string, ReplacementEntityData>();
 	/** entity_name: { entity_id, entity_value } */
@@ -236,6 +248,12 @@ export function replaceText(text: string, blocks: Block[], variables: Variable[]
 
 	for (const variable of variables) {
 		variableMap.set(variable.name, { id: variable.id, value: variable.value });
+	}
+
+	// resolved variables evaluate to generation time based values.
+	// and are not stored in the db
+	for (const [name, value] of getReservedVariableValues(now)) {
+		variableMap.set(name, { id: `reserved:${name}`, value, noTrack: true });
 	}
 
 	const blocksReplaced = replaceBlocks(text, blockMap);
@@ -276,12 +294,14 @@ export type CollectLetterRefsOutcome =
  * Runs {@link replaceText} over each letter section and unions the used ids.
  * Fails fast with the offending section name on the first reference error —
  * callers that must abort on bad refs (letter generation) use this directly,
- * while best-effort callers fall back to zero rows.
+ * while best-effort callers fall back to zero rows. Reserved variables
+ * substitute normally but contribute no ids, so junction rows are unaffected.
  */
 export function collectLetterRefs(
 	sections: Record<LetterSectionKey, { text: string | null }>,
 	blocks: Block[],
-	variables: Variable[]
+	variables: Variable[],
+	now: Date = new Date()
 ): CollectLetterRefsOutcome {
 	const blockIds = new Set<string>();
 	const variableIds = new Set<string>();
@@ -292,7 +312,7 @@ export function collectLetterRefs(
 			replacedText[key] = null;
 			continue;
 		}
-		const outcome = replaceText(text, blocks, variables);
+		const outcome = replaceText(text, blocks, variables, now);
 		if (!outcome.ok) return { ok: false, value: null, error: { ...outcome.error, section: key } };
 		for (const id of outcome.value.blocksUsed) blockIds.add(id);
 		for (const id of outcome.value.variablesUsed) variableIds.add(id);
