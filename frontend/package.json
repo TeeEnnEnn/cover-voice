@@ -58,7 +58,7 @@
 		"workbox-strategies": "^7.4.1"
 	},
 	"dependencies": {
-		"better-auth": "^1.6.27",
+		"better-auth": "^1.7.7",
 		"openapi-fetch": "^0.17.0"
 	}
 }
