@@ -1,5 +1,10 @@
 import { db } from '../db/index.js';
-import { blockVariableTable, letterVariableTable, variableTable } from '../db/schema.js';
+import {
+	blockVariableTable,
+	letterVariableOverrideTable,
+	letterVariableTable,
+	variableTable
+} from '../db/schema.js';
 import { desc, eq, and } from 'drizzle-orm';
 import type { CreateVariableInput, UpdateVariableInput } from '../schemas/variables.js';
 import { resyncUserUsage } from '../services/usage-sync.js';
@@ -72,8 +77,12 @@ export async function deleteVariable(userId: string, id: string) {
 		if (!existing) return undefined;
 		// FKs are restrict: clear junction rows explicitly, then resync so no
 		// dangling references linger in other blocks' or letters' links.
+		// Overrides cascade in the DB; delete explicitly too for the same reason.
 		await tx.delete(blockVariableTable).where(eq(blockVariableTable.variableId, id));
 		await tx.delete(letterVariableTable).where(eq(letterVariableTable.variableId, id));
+		await tx
+			.delete(letterVariableOverrideTable)
+			.where(eq(letterVariableOverrideTable.variableId, id));
 		const deleted = (
 			await tx
 				.delete(variableTable)

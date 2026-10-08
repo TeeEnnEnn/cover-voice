@@ -203,6 +203,20 @@ describe('collectLetterRefs', () => {
 		expect(outcome.error.section).toBe('header');
 		expect(outcome.error.type).toBe('block');
 	});
+
+	it('applies overrides but keeps variable ids for junction rows', () => {
+		const outcome = replaceText(
+			'{% intro %} {{name}}',
+			introBlocks,
+			nameVariables,
+			new Date(),
+			new Map([['var-1', 'Grace']])
+		);
+		expect(outcome.ok).toBe(true);
+		if (!outcome.ok) return;
+		expect(outcome.value.replacedText).toBe('Hi Grace Grace');
+		expect(outcome.value.variablesUsed).toEqual(['var-1']);
+	});
 });
 
 describe('reserved variables', () => {

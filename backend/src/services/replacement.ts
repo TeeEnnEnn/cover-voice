@@ -26,6 +26,9 @@ export type ReplacementEntityData = {
 	noTrack?: boolean;
 };
 
+/** Per-letter variable overrides, keyed by variable id → override value. */
+export type VariableOverrides = Map<string, string>;
+
 export type ReplacementResult = {
 	/** ids of blocks used */
 	blocksUsed: Array<string>;
@@ -235,11 +238,12 @@ export function replaceText(
 	text: string,
 	blocks: Block[],
 	variables: Variable[],
-	now: Date = new Date()
+	now: Date = new Date(),
+	overrides?: VariableOverrides
 ): ReplaceOutcome {
 	/** entity_name: { entity_id, entity_value } */
 	const blockMap = new Map<string, ReplacementEntityData>();
-	/** entity_name: { entity_id, entity_value } */
+	/** entity_name: { entity_id, entity_value } — override value wins when present. */
 	const variableMap = new Map<string, ReplacementEntityData>();
 
 	for (const block of blocks) {
@@ -247,7 +251,11 @@ export function replaceText(
 	}
 
 	for (const variable of variables) {
-		variableMap.set(variable.name, { id: variable.id, value: variable.value });
+		const override = overrides?.get(variable.id);
+		variableMap.set(variable.name, {
+			id: variable.id,
+			value: override ?? variable.value
+		});
 	}
 
 	// resolved variables evaluate to generation time based values.
@@ -296,12 +304,15 @@ export type CollectLetterRefsOutcome =
  * callers that must abort on bad refs (letter generation) use this directly,
  * while best-effort callers fall back to zero rows. Reserved variables
  * substitute normally but contribute no ids, so junction rows are unaffected.
+ * `overrides` only swaps values; used ids are unchanged so junction rows
+ * stay id-keyed.
  */
 export function collectLetterRefs(
 	sections: Record<LetterSectionKey, { text: string | null }>,
 	blocks: Block[],
 	variables: Variable[],
-	now: Date = new Date()
+	now: Date = new Date(),
+	overrides?: VariableOverrides
 ): CollectLetterRefsOutcome {
 	const blockIds = new Set<string>();
 	const variableIds = new Set<string>();
@@ -312,7 +323,7 @@ export function collectLetterRefs(
 			replacedText[key] = null;
 			continue;
 		}
-		const outcome = replaceText(text, blocks, variables, now);
+		const outcome = replaceText(text, blocks, variables, now, overrides);
 		if (!outcome.ok) return { ok: false, value: null, error: { ...outcome.error, section: key } };
 		for (const id of outcome.value.blocksUsed) blockIds.add(id);
 		for (const id of outcome.value.variablesUsed) variableIds.add(id);

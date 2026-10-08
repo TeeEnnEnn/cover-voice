@@ -3,6 +3,7 @@ import {
 	blockTable,
 	letterBlockTable,
 	letterTable,
+	letterVariableOverrideTable,
 	letterVariableTable,
 	variableTable
 } from '../db/schema.js';
@@ -16,6 +17,7 @@ import {
 	syncLetterLinks,
 	toLetterSections
 } from '../services/usage-sync.js';
+import { getLetterOverrideMap } from './overrides.js';
 import { stripUndefined } from './helpers.js';
 
 export async function getLetters(userId: string, pagination?: { limit: number; offset: number }) {
@@ -94,8 +96,13 @@ export async function deleteLetter(userId: string, id: string) {
 		)[0];
 		if (!existing) return null;
 		// FKs are restrict: clear this letter's junction rows first.
+		// Overrides cascade in the DB; delete explicitly too so the operation
+		// is correct even if the cascade migration hasn't run somewhere.
 		await tx.delete(letterBlockTable).where(eq(letterBlockTable.letterId, id));
 		await tx.delete(letterVariableTable).where(eq(letterVariableTable.letterId, id));
+		await tx
+			.delete(letterVariableOverrideTable)
+			.where(eq(letterVariableOverrideTable.letterId, id));
 		const deleted = await tx
 			.delete(letterTable)
 			.where(and(eq(letterTable.userId, userId), eq(letterTable.id, id)))
@@ -133,18 +140,27 @@ export type ResolveAndRenderResult =
 /**
  * Shared resolve → render pipeline behind both letter endpoints: resolves
  * section references against the user's blocks/variables and renders the
- * result to PDF. Pure read path — writes nothing to the database.
+ * result to PDF. Per-letter variable overrides take precedence over default
+ * values. Pure read path — writes nothing to the database.
  */
 export async function resolveAndRender(
 	userId: string,
+	letterId: string,
 	letterGenerationContent: LetterGeneration
 ): Promise<ResolveAndRenderResult> {
-	const [blocks, variables] = await Promise.all([
+	const [blocks, variables, overrides] = await Promise.all([
 		db.select().from(blockTable).where(eq(blockTable.userId, userId)),
-		db.select().from(variableTable).where(eq(variableTable.userId, userId))
+		db.select().from(variableTable).where(eq(variableTable.userId, userId)),
+		db.transaction(async (tx) => getLetterOverrideMap(tx, userId, letterId))
 	]);
 
-	const collected = collectLetterRefs(letterGenerationContent.sections, blocks, variables);
+	const collected = collectLetterRefs(
+		letterGenerationContent.sections,
+		blocks,
+		variables,
+		new Date(),
+		overrides
+	);
 	if (!collected.ok) {
 		return { ok: false, value: null, error: collected.error };
 	}
@@ -199,7 +215,7 @@ export async function generateLetter(
 		return null;
 	}
 
-	const resolved = await resolveAndRender(userId, letterGenerationContent);
+	const resolved = await resolveAndRender(userId, letterId, letterGenerationContent);
 	if (!resolved.ok) {
 		return { ok: false, letter: null, error: resolved.error };
 	}

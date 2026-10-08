@@ -26,10 +26,11 @@ export const load: PageServerLoad = async ({ params, fetch, request }) => {
 	const api = createApiClient(fetch, cookie);
 	const letterId = params.id;
 
-	const [letterResult, blockResult, variableResult] = await Promise.all([
+	const [letterResult, blockResult, variableResult, overrideResult] = await Promise.all([
 		api.GET('/api/letters/{id}', { params: { path: { id: letterId } } }),
 		api.GET('/api/blocks'),
-		api.GET('/api/variables')
+		api.GET('/api/variables'),
+		api.GET('/api/letters/{id}/overrides', { params: { path: { id: letterId } } })
 	]);
 
 	if (letterResult.error) {
@@ -42,7 +43,9 @@ export const load: PageServerLoad = async ({ params, fetch, request }) => {
 		blocks: blockResult.data?.blocks ?? [],
 		blockError: blockResult.error ? 'Failed to load blocks' : null,
 		variables: variableResult.data?.variables ?? [],
-		variableError: variableResult.error ? 'Failed to load variables' : null
+		variableError: variableResult.error ? 'Failed to load variables' : null,
+		overrides: overrideResult.data?.overrides ?? [],
+		overrideError: overrideResult.error ? 'Failed to load per-letter values' : null
 	};
 };
 

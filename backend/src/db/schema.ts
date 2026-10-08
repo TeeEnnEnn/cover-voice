@@ -213,6 +213,31 @@ export const letterVariableTable = pgTable(
 	]
 );
 
+// Per-letter value overrides for variables. Keyed by (letterId,
+// variableId) so renames flow through; both FKs cascade so deleting a
+// letter or variable removes its overrides without manual cleanup.
+export const letterVariableOverrideTable = pgTable(
+	'letter_variable_override',
+	{
+		letterId: text('letter_id')
+			.notNull()
+			.references(() => letterTable.id, { onDelete: 'cascade' }),
+		variableId: text('variable_id')
+			.notNull()
+			.references(() => variableTable.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		value: text('value').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.letterId, table.variableId] }),
+		index('letter_variable_override_letter_idx').on(table.letterId),
+		index('letter_variable_override_variable_idx').on(table.variableId),
+		index('letter_variable_override_user_idx').on(table.userId)
+	]
+);
+
 export const userRelations = relations(user, ({ many }) => ({
 	sessions: many(session),
 	accounts: many(account),
@@ -279,3 +304,21 @@ export const letterVariableRelations = relations(letterVariableTable, ({ one }) 
 		references: [user.id]
 	})
 }));
+
+export const letterVariableOverrideRelations = relations(
+	letterVariableOverrideTable,
+	({ one }) => ({
+		letter: one(letterTable, {
+			fields: [letterVariableOverrideTable.letterId],
+			references: [letterTable.id]
+		}),
+		variable: one(variableTable, {
+			fields: [letterVariableOverrideTable.variableId],
+			references: [variableTable.id]
+		}),
+		user: one(user, {
+			fields: [letterVariableOverrideTable.userId],
+			references: [user.id]
+		})
+	})
+);

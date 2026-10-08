@@ -463,8 +463,125 @@
 		});
 	}
 
-	let blocksOpen = $state(true);
-	let variablesOpen = $state(true);
+	let blocksOpen = $state(false);
+	let variablesOpen = $state(false);
+
+	// ---- Per-letter variable overrides ----
+	// One-time snapshot like `storedContent` above: this page never invalidates
+	// `data`, so capturing the initial overrides once per mount is correct.
+	type LetterOverride = {
+		letterId: string;
+		variableId: string;
+		variableName: string;
+		value: string;
+	};
+	const initialOverrides: Array<LetterOverride> = $derived(data.overrides ?? []);
+	const initialOverrideError: string | null = $derived(data.overrideError ?? null);
+	let overrides = $derived<Array<LetterOverride>>(initialOverrides);
+	let overridesOpen = $state(true);
+	let overrideError = $derived<string | null>(initialOverrideError);
+	let overrideSaving = $state<string | null>(null);
+	let newOverrideVariableId = $state<string>('');
+	let newOverrideValue = $state<string>('');
+
+	function variableNamesIn(text: string): Array<string> {
+		const out: Array<string> = [];
+		for (const m of text.matchAll(/\{\{\s*([\w-]+)\s*\}\}/g)) out.push(m[1]);
+		return out;
+	}
+
+	function blockNamesIn(text: string): Array<string> {
+		const out: Array<string> = [];
+		for (const m of text.matchAll(/\{%\s*([\w-]+)\s*%\}/g)) out.push(m[1]);
+		return out;
+	}
+
+	// Variables this letter actually uses: direct {{refs}} plus {{refs}}
+	// pulled in via the {%blocks%} referenced by the current sections.
+	let usedVariables = $derived.by(() => {
+		const sectionsText = `${headerText}\n${bodyText}\n${footerText}`;
+		const names = new Set<string>(variableNamesIn(sectionsText));
+		const blockByName = new Map(data.blocks.map((b) => [b.name, b.value]));
+		for (const blockName of blockNamesIn(sectionsText)) {
+			const blockValue = blockByName.get(blockName);
+			if (blockValue) for (const name of variableNamesIn(blockValue)) names.add(name);
+		}
+		return data.variables.filter((v) => names.has(v.name));
+	});
+
+	let overriddenIds = $derived(new Set(overrides.map((o) => o.variableId)));
+
+	let overridableVariables = $derived(usedVariables.filter((v) => !overriddenIds.has(v.id)));
+
+	function defaultValueFor(variableId: string): string {
+		return data.variables.find((v) => v.id === variableId)?.value ?? '';
+	}
+
+	function markOverridesStale() {
+		previewHint = 'Overrides changed — press Update Preview to apply, Download to save.';
+	}
+
+	async function saveOverride(variableId: string, value: string) {
+		const trimmed = value.trim();
+		if (!trimmed || overrideSaving) return;
+		overrideSaving = variableId;
+		overrideError = null;
+		try {
+			const response = await fetch(`/api/letters/${letterId}/overrides/${variableId}`, {
+				method: 'PUT',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ value: trimmed })
+			});
+			if (!response.ok) {
+				overrideError =
+					response.status === 404
+						? 'Letter or variable not found — reload and try again.'
+						: 'Failed to save override. Try again.';
+				return;
+			}
+			const saved = (await response.json()) as LetterOverride;
+			if (overrides.some((o) => o.variableId === variableId)) {
+				overrides = overrides.map((o) => (o.variableId === variableId ? saved : o));
+			} else overrides = [...overrides, saved];
+			markOverridesStale();
+		} catch {
+			overrideError = 'Failed to save override. Try again.';
+		} finally {
+			overrideSaving = null;
+		}
+	}
+
+	async function removeOverride(variableId: string) {
+		if (overrideSaving) return;
+		overrideSaving = variableId;
+		overrideError = null;
+		try {
+			const response = await fetch(`/api/letters/${letterId}/overrides/${variableId}`, {
+				method: 'DELETE',
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				overrideError = 'Failed to remove override. Try again.';
+				return;
+			}
+			overrides = overrides.filter((o) => o.variableId !== variableId);
+			markOverridesStale();
+		} catch {
+			overrideError = 'Failed to remove override. Try again.';
+		} finally {
+			overrideSaving = null;
+		}
+	}
+
+	async function addOverride() {
+		if (!newOverrideVariableId || overrideSaving) return;
+		await saveOverride(newOverrideVariableId, newOverrideValue);
+		if (!overrideError) {
+			newOverrideVariableId = '';
+			newOverrideValue = '';
+		}
+	}
 </script>
 
 <div class="container mx-auto my-8 flex flex-col gap-8 px-4 md:px-0">
@@ -808,10 +925,16 @@
 				</div>
 				{#if variablesOpen}
 					<div id="variables-body" transition:slide>
+						{#if overrides.length > 0}
+							<p class="mb-2 text-sm text-muted-foreground">
+								Variables with a <span class="text-pink-500" aria-hidden="true">*</span> have an override.
+							</p>
+						{/if}
 						<ReferenceList
 							kind="variable"
 							items={data.variables}
 							error={data.variableError}
+							markedIds={overriddenIds}
 							onCreate={() => {
 								settingNewVariable = true;
 							}}
@@ -854,6 +977,124 @@
 								</div>
 								<Button type="submit" class="w-full">Add</Button>
 							</form>
+						{/if}
+					</div>
+				{/if}
+			</div>
+
+			<div id="letter-overrides" class="border border-border bg-card px-3 py-3 shadow-sm">
+				<div class="flex items-center justify-between gap-2">
+					<h3 class="text-lg font-semibold">Per-letter overrides</h3>
+					<Button
+						variant="outline"
+						type="button"
+						aria-expanded={overridesOpen}
+						aria-controls="letter-overrides-body"
+						onclick={() => {
+							overridesOpen = !overridesOpen;
+						}}
+					>
+						{overridesOpen ? 'Hide' : 'Show'}
+					</Button>
+				</div>
+				{#if overridesOpen}
+					<div id="letter-overrides-body" transition:slide class="mt-2 flex flex-col gap-3">
+						<p class="text-sm text-muted-foreground">
+							Override a variable just for this letter — including inside blocks. Changing an
+							override requires Update Preview / Download to take effect.
+						</p>
+						{#if overrideError}
+							<p class="text-sm text-red-600" role="alert">{overrideError}</p>
+						{/if}
+						{#if overrides.length > 0}
+							<ul class="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
+								{#each overrides as override (override.variableId)}
+									<li class="flex flex-col gap-1 border border-border p-2">
+										<div class="flex items-center justify-between gap-2">
+											<code class="text-sm font-medium">{`{{${override.variableName}}}`}</code>
+											<Button
+												variant="ghost"
+												type="button"
+												disabled={overrideSaving === override.variableId}
+												onclick={() => removeOverride(override.variableId)}
+												title="Remove override, revert to default"
+											>
+												Reset
+											</Button>
+										</div>
+										<p class="truncate text-xs text-muted-foreground">
+											Default: {defaultValueFor(override.variableId)}
+										</p>
+										<form
+											class="flex gap-2"
+											onsubmit={(e) => {
+												e.preventDefault();
+												const input = e.currentTarget.querySelector('input');
+												if (input) saveOverride(override.variableId, input.value);
+											}}
+										>
+											<Input
+												name="overrideValue-{override.variableId}"
+												value={override.value}
+												aria-label={`Override for ${override.variableName} in this letter`}
+												oninput={(e) => {
+													overrides = overrides.map((o) =>
+														o.variableId === override.variableId
+															? { ...o, value: e.currentTarget.value }
+															: o
+													);
+												}}
+											/>
+											<Button
+												type="submit"
+												variant="secondary"
+												disabled={overrideSaving === override.variableId}
+											>
+												{overrideSaving === override.variableId ? 'Saving…' : 'Save'}
+											</Button>
+										</form>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="text-sm text-muted-foreground">No overrides yet.</p>
+						{/if}
+						{#if usedVariables.length === 0}
+							<p class="text-sm text-muted-foreground">
+								This letter doesn't use any variables yet — add a
+								<code>{`{{variable}}`}</code> reference above to override it here.
+							</p>
+						{:else if overridableVariables.length > 0}
+							<div class="flex flex-col gap-2 border-t border-border pt-2">
+								<Label for="newOverrideVariable">Variable used in this letter</Label>
+								<select
+									id="newOverrideVariable"
+									bind:value={newOverrideVariableId}
+									class="border border-border bg-card px-2 py-1"
+								>
+									<option value="">Select a variable…</option>
+									{#each overridableVariables as variable (variable.id)}
+										<option value={variable.id}>{variable.name} — {variable.value}</option>
+									{/each}
+								</select>
+								<Label for="newOverrideValue">Override</Label>
+								<Input
+									id="newOverrideValue"
+									bind:value={newOverrideValue}
+									placeholder="Override for this letter only"
+								/>
+								<Button
+									type="button"
+									disabled={!newOverrideVariableId || !newOverrideValue.trim() || !!overrideSaving}
+									onclick={addOverride}
+								>
+									Add override
+								</Button>
+							</div>
+						{:else}
+							<p class="text-sm text-muted-foreground">
+								Every variable used in this letter already has an override.
+							</p>
 						{/if}
 					</div>
 				{/if}

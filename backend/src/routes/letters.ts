@@ -10,6 +10,11 @@ import {
 	resolveAndRender,
 	updateLetter
 } from '../crud/letters.js';
+import {
+	deleteLetterOverride,
+	getLetterOverrides,
+	upsertLetterOverride
+} from '../crud/overrides.js';
 import type { CollectLetterRefsError } from '../services/replacement.js';
 import { getLetterUsage } from '../crud/usage.js';
 import {
@@ -19,11 +24,20 @@ import {
 	updateLetterSchema,
 	generateLetterSchema
 } from '../schemas/letters.js';
+import {
+	letterVariableOverrideListSchema,
+	letterVariableOverrideSchema,
+	upsertLetterVariableOverrideSchema
+} from '../schemas/overrides.js';
 import { letterUsageSchema } from '../schemas/usage.js';
 import { idParamSchema, paginationQuerySchema, validationErrorSchema } from '../schemas/common.js';
 import { validate } from '../middleware/validate.js';
 import { isUniqueViolation, serializeTimestamps } from '../crud/helpers.js';
 import { registry } from '../openapi/registry.js';
+
+const letterOverrideParamsSchema = idParamSchema.extend({
+	variableId: idParamSchema.shape.id
+});
 
 registry.registerPath({
 	method: 'get',
@@ -279,6 +293,91 @@ registry.registerPath({
 	}
 });
 
+registry.registerPath({
+	method: 'get',
+	path: '/api/letters/{id}/overrides',
+	summary: "List a letter's per-variable value overrides",
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: idParamSchema
+	},
+	responses: {
+		200: {
+			description: "The letter's variable overrides",
+			content: { 'application/json': { schema: letterVariableOverrideListSchema } }
+		},
+		404: {
+			description: 'Letter does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'put',
+	path: '/api/letters/{id}/overrides/{variableId}',
+	summary: 'Create or update a per-letter variable override',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: letterOverrideParamsSchema,
+		body: {
+			content: { 'application/json': { schema: upsertLetterVariableOverrideSchema } }
+		}
+	},
+	responses: {
+		200: {
+			description: 'The upserted override',
+			content: { 'application/json': { schema: letterVariableOverrideSchema } }
+		},
+		400: {
+			description: 'Invalid body',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		404: {
+			description: 'Letter or variable does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		401: {
+			description: 'Not authenticated',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		},
+		403: {
+			description: 'Email not verified',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
+registry.registerPath({
+	method: 'delete',
+	path: '/api/letters/{id}/overrides/{variableId}',
+	summary: 'Delete a per-letter variable override (reverts to the default value)',
+	tags: ['letters'],
+	security: [{ cookieAuth: [] }],
+	request: {
+		params: letterOverrideParamsSchema
+	},
+	responses: {
+		204: {
+			description: 'Deleted successfully (or no override existed)'
+		},
+		404: {
+			description: 'Letter or variable does not exist',
+			content: { 'application/json': { schema: validationErrorSchema } }
+		}
+	}
+});
+
 const router = Router();
 
 router.get(
@@ -333,6 +432,56 @@ router.get(
 			return;
 		}
 		res.json(usage);
+	}
+);
+
+router.get(
+	'/letters/:id/overrides',
+	requireAuth,
+	validate({ params: idParamSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const overrides = await getLetterOverrides(userId, letterId);
+		if (!overrides) {
+			res.status(404).json({ error: { message: 'Letter not found', details: [] } });
+			return;
+		}
+		res.json({ overrides });
+	}
+);
+
+router.put(
+	'/letters/:id/overrides/:variableId',
+	requireAuth,
+	validate({ params: letterOverrideParamsSchema, body: upsertLetterVariableOverrideSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const variableId = (req.params as unknown as { variableId: string }).variableId;
+		const override = await upsertLetterOverride(userId, letterId, variableId, req.body.value);
+		if (!override) {
+			res.status(404).json({ error: { message: 'Letter or variable not found', details: [] } });
+			return;
+		}
+		res.status(200).json(override);
+	}
+);
+
+router.delete(
+	'/letters/:id/overrides/:variableId',
+	requireAuth,
+	validate({ params: letterOverrideParamsSchema }),
+	async (req, res) => {
+		const userId = res.locals.user!.id;
+		const letterId = req.params.id as string;
+		const variableId = (req.params as unknown as { variableId: string }).variableId;
+		const deleted = await deleteLetterOverride(userId, letterId, variableId);
+		if (deleted === null) {
+			res.status(404).json({ error: { message: 'Letter or variable not found', details: [] } });
+			return;
+		}
+		res.status(204).send();
 	}
 );
 
@@ -435,7 +584,8 @@ router.post(
 		}
 		// Ephemeral: resolves and renders without touching rawContent,
 		// generatedContent, or the junction tables.
-		const resolved = await resolveAndRender(userId, req.body);
+		// Overrides are still applied so the preview matches the download.
+		const resolved = await resolveAndRender(userId, letterId, req.body);
 		if (!resolved.ok) {
 			referenceError(res, resolved.error);
 			return;
