@@ -45,7 +45,7 @@
 		>
 			<h4 class="text-lg font-semibold">{heading}</h4>
 			<ul class="mt-3 flex max-h-48 flex-col gap-1 overflow-y-auto text-sm text-muted-foreground">
-				{#each lines as line (line)}
+				{#each lines as line, lineIdx (lineIdx)}
 					<li>{line}</li>
 				{/each}
 			</ul>

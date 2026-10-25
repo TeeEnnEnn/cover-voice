@@ -210,7 +210,7 @@
 								aria-label="Variable suggestions"
 								class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
 							>
-								{#each varMenuItems as item, i (item.id)}
+								{#each varMenuItems as item, i (`${item.id}:${i}`)}
 									<li role="option" aria-selected={i === varMenu.index}>
 										<button
 											type="button"

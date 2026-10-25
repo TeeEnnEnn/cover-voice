@@ -218,8 +218,18 @@
 		await fetchPreview(currentContent());
 	}
 
-	function sanitizeFilename(title: string): string {
-		return `${title.replace(/[^a-z0-9-_]+/gi, '-').slice(0, 50) || 'letter'}.pdf`;
+	function sanitizePhrase(phrase: string | null | undefined): string {
+		return (phrase ?? '')
+			.replace(/[^a-z0-9-_]+/gi, '-')
+			.slice(0, 50)
+			.replace(/^-+|-+$/g, '');
+	}
+
+	function downloadFilename(): string {
+		const parts = [sanitizePhrase(data.user.name), sanitizePhrase(data.letter.title)].filter(
+			(part) => part.length > 0
+		);
+		return `${parts.length > 0 ? parts.join('_') + '_' : ''}letter.pdf`;
 	}
 
 	async function downloadPdf() {
@@ -250,7 +260,7 @@
 			const url = URL.createObjectURL(blob);
 			const a = document.createElement('a');
 			a.href = url;
-			a.download = sanitizeFilename(data.letter.title);
+			a.download = downloadFilename();
 			document.body.appendChild(a);
 			a.click();
 			a.remove();
@@ -261,9 +271,9 @@
 	}
 
 	const sectionMeta = [
-		{ key: 'header', title: 'Header', prompt: 'How will you start your cover letter off?' },
-		{ key: 'body', title: 'Body', prompt: 'What will the main content of your cover letter be?' },
-		{ key: 'footer', title: 'Footer', prompt: 'How will you end your cover letter?' }
+		{ key: 'header', title: 'Header' },
+		{ key: 'body', title: 'Body' },
+		{ key: 'footer', title: 'Footer' }
 	] as const;
 	const aligns = ['left', 'center', 'right', 'justify'] as const;
 	const pageFonts = ['Courier', 'Helvetica', 'Times-Roman'] as const;
@@ -418,11 +428,18 @@
 	}
 
 	// ---- Reference chips + per-section dirty tracking ----
+	// Deduplicated by kind+name: chips represent the set of references used,
+	// and duplicates would both clutter the UI and crash the keyed {#each}
+	// below (each_key_duplicate blanks the whole page).
 	function refsIn(
 		text: string
 	): Array<{ name: string; kind: 'block' | 'variable'; known: boolean }> {
 		const out: Array<{ name: string; kind: 'block' | 'variable'; known: boolean }> = [];
+		const seen = new Set<string>();
 		for (const m of text.matchAll(/\{%\s*([\w-]+)\s*%\}/g)) {
+			const key = `block:${m[1]}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
 			out.push({
 				name: m[1],
 				kind: 'block',
@@ -430,6 +447,9 @@
 			});
 		}
 		for (const m of text.matchAll(/\{\{\s*([\w-]+)\s*\}\}/g)) {
+			const key = `variable:${m[1]}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
 			out.push({
 				name: m[1],
 				kind: 'variable',
@@ -639,13 +659,12 @@
 				{#each sectionMeta as section (section.key)}
 					{@const refs = refsIn(textFor(section.key))}
 					<div id="section-{section.key}" class=" border border-border bg-card px-3 py-3 shadow-sm">
-						<div class="flex items-center justify-between gap-2">
-							<p class="font-medium">{section.prompt}</p>
-							{#if isDirty(section.key)}
+						{#if isDirty(section.key)}
+							<div class="flex items-center justify-between gap-2">
 								<span class="shrink-0 bg-amber-100 px-2 py-0.5 text-xs text-amber-800">Unsaved</span
 								>
-							{/if}
-						</div>
+							</div>
+						{/if}
 						<div class="mt-2 flex flex-col gap-2">
 							<Label for="{section.key}Text">{section.title} text</Label>
 							<div class="relative" data-field-wrap={section.key}>
@@ -674,7 +693,7 @@
 										class="absolute z-20 w-56 overflow-hidden border border-border bg-popover shadow-lg"
 										style="top: {menuPos.top}px; left: {menuPos.left}px;"
 									>
-										{#each menuItems as item, i (item.id)}
+										{#each menuItems as item, i (`${item.id}:${i}`)}
 											<li role="option" aria-selected={i === menu.index}>
 												<button
 													type="button"
@@ -702,7 +721,7 @@
 							</div>
 							{#if refs.length > 0}
 								<div class="flex flex-wrap gap-1.5" aria-label="References used in this section">
-									{#each refs as ref (ref.kind + ref.name)}
+									{#each refs as ref, refIdx (`${ref.kind}:${ref.name}:${refIdx}`)}
 										<button
 											type="button"
 											title={ref.known
